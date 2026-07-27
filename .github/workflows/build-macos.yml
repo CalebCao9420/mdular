@@ -1,0 +1,84 @@
+# Build macOS DMG via GitHub-hosted macOS runners (no local Mac required).
+#
+# Trigger: Actions → "Build macOS" → Run workflow
+# Or: push a tag like v0.0.4
+#
+# Secrets (optional but recommended for Gatekeeper / updater):
+#   TAURI_SIGNING_PRIVATE_KEY      — updater private key contents (same as local md-toolkit.key)
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD — empty string if key has no password
+#   APPLE_CERTIFICATE             — base64 .p12 (Developer ID Application)
+#   APPLE_CERTIFICATE_PASSWORD
+#   APPLE_SIGNING_IDENTITY        — e.g. "Developer ID Application: Name (TEAMID)"
+#   APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID — notarization (Apple ID + app-specific password)
+#
+# Without Apple secrets: build still works; users may need right-click → Open on first launch.
+
+name: Build macOS
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            arch: apple-silicon
+          - target: x86_64-apple-darwin
+            arch: intel
+
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          key: macos-${{ matrix.target }}
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build Tauri (macOS ${{ matrix.arch }})
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          tagName: v__VERSION__
+          releaseName: MD Toolkit v__VERSION__
+          releaseBody: |
+            Desktop builds for this version.
+            macOS: open the `.dmg` for your chip (Apple Silicon / Intel).
+          releaseDraft: true
+          prerelease: false
+          args: --target ${{ matrix.target }}
