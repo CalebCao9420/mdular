@@ -3,15 +3,15 @@
 # Trigger: Actions → "Build macOS" → Run workflow
 # Or: push a tag like v0.0.4
 #
-# Secrets (optional but recommended for Gatekeeper / updater):
-#   TAURI_SIGNING_PRIVATE_KEY      — updater private key contents (same as local md-toolkit.key)
-#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD — empty string if key has no password
-#   APPLE_CERTIFICATE             — base64 .p12 (Developer ID Application)
-#   APPLE_CERTIFICATE_PASSWORD
-#   APPLE_SIGNING_IDENTITY        — e.g. "Developer ID Application: Name (TEAMID)"
-#   APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID — notarization (Apple ID + app-specific password)
+# Unsigned by default (no Apple Developer cert). Do NOT set empty APPLE_*
+# secrets — empty values make `security import` fail during bundling.
 #
-# Without Apple secrets: build still works; users may need right-click → Open on first launch.
+# When you have a real Developer ID cert later, add these Secrets and restore
+# the APPLE_* env block on the build step:
+#   APPLE_CERTIFICATE / APPLE_CERTIFICATE_PASSWORD / APPLE_SIGNING_IDENTITY
+#   APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID
+#
+# tauri.ci.json disables updater signing artifacts (no TAURI_SIGNING_PRIVATE_KEY needed).
 
 name: Build macOS
 
@@ -39,10 +39,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: lts/*
           cache: npm
@@ -65,20 +65,13 @@ jobs:
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           tagName: v__VERSION__
           releaseName: MD Toolkit v__VERSION__
           releaseBody: |
             Desktop builds for this version.
             macOS: open the `.dmg` for your chip (Apple Silicon / Intel).
+            Unsigned CI build — first open may need right-click → Open.
           releaseDraft: true
           prerelease: false
-          args: --target ${{ matrix.target }}
+          args: --target ${{ matrix.target }} --config src-tauri/tauri.ci.json
