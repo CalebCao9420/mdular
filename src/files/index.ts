@@ -1,7 +1,7 @@
 // @ts-nocheck
 /// <reference path="../types/global.d.ts" />
 
-// files.js ù?local disk (File System Access API) + in-memory mirror (`files`).
+// files.js ‚Äî local disk (File System Access API) + in-memory mirror (`files`).
 
 const CURRENT_FILE_SYNC_INTERVAL = 1000; // ms, how often to save currently open file
 const MAX_MEDIA_SIZE = 30 * 1024 * 1024;
@@ -407,6 +407,7 @@ async function moveFile(oldPath, newPath) {
         log(`Moved ${oldPath} to ${newPath}`);
     } catch (error) {
         logError('Error moving file:', error);
+        throw error;
     }
 }
 
@@ -491,7 +492,7 @@ async function openFile(path, saveToHistory = true, el = 'editor-textarea') {
 
         if (isSameFile) {
             // Same-file reload (e.g. API sync or changes from local fs). Diff old and new content and
-            // replaceRange only the differing middle ù?cursor and scroll stay put
+            // replaceRange only the differing middle ‚Äî cursor and scroll stay put
             // naturally when the edit doesn't span them.
             if (el === 'editor2-textarea') {
                 showEditor2();
@@ -671,15 +672,21 @@ async function syncCurrentFile(switchAwayEditor = false) {
             log('Filename has changed from ', filename, 'to', newFilename);
 
             const newPath = joinPath(toDirPath(path), newFilename);
-            let content = getCurrentContent();
+            const content = getCurrentContent();
 
-            // Probe the new path before deleting the old file. Sanitization should
-            // catch the common cases, but if the filesystem still rejects the name
-            // for any reason (reserved Windows names, length limits, ù?, we'd
-            // otherwise lose the file entirely.
+            // Never overwrite an existing note as a side effect of renaming.
+            if (await exists(newPath)) {
+                showToast(`A file named "${newFilename}" already exists`);
+                isMessingWithCurrentEditor = false;
+                return;
+            }
+
+            // Fully write and close the destination before touching the source.
+            // If any step fails the original file remains intact.
             let newHandle;
             try {
-                newHandle = await getFileHandle(newPath, true);
+                await write(newPath, content);
+                newHandle = await getFileHandle(newPath);
             } catch (error) {
                 logError('Cannot rename, filesystem rejected new name:', newPath, error);
                 alert(`Cannot rename file to "${newFilename}": ${error.message || error.name}`);
@@ -690,13 +697,6 @@ async function syncCurrentFile(switchAwayEditor = false) {
             // Change the file immediately, because on further await calls it can be synced by syncTexts.
             currentEditor.path = newPath;
 
-            // 1. Remove file with old filename
-            // 2. Create file with new filename
-
-            // TODO every await means we can can have RC due to editor content change
-            await remove(path);
-            log('Removed due to filename change', path);
-
             addMemFile(newPath, {
                 isFile: true,
                 content: content,
@@ -704,8 +704,10 @@ async function syncCurrentFile(switchAwayEditor = false) {
                 path: newPath,
                 handle: newHandle,
             });
-            await writeIfContentIsDifferent(newPath, getCurrentContent());
             log('Created', newPath);
+
+            await remove(path);
+            log('Removed due to filename change', path);
 
             await renderSidebar();
 

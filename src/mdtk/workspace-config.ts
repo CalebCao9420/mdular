@@ -14,12 +14,15 @@ const MDTK_CONFIG_PATH = '/.mdtk/config.json';
 
 let cachedMdtkConfig: MdtkWorkspaceConfig | null = null;
 
-function normalizePluginIds(plugins: unknown): string[] {
+function normalizeWorkspacePluginIds(plugins: unknown): string[] {
   if (!Array.isArray(plugins)) {
     return [];
   }
   return plugins
-    .filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+    .filter(
+      (id): id is string =>
+        typeof id === 'string' && /^[a-z0-9][a-z0-9_-]*$/i.test(id.trim())
+    )
     .map((id) => id.trim());
 }
 
@@ -32,7 +35,7 @@ async function loadMdtkWorkspaceConfig(forceReload = false): Promise<MdtkWorkspa
     const parsed = JSON.parse(text) as MdtkWorkspaceConfig;
     cachedMdtkConfig = parsed && typeof parsed === 'object' ? parsed : {};
     if (cachedMdtkConfig.plugins) {
-      cachedMdtkConfig.plugins = normalizePluginIds(cachedMdtkConfig.plugins);
+      cachedMdtkConfig.plugins = normalizeWorkspacePluginIds(cachedMdtkConfig.plugins);
     }
   } catch (err) {
     cachedMdtkConfig = {};

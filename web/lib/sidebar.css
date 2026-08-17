@@ -10,6 +10,44 @@
 	cursor: pointer;
 }
 
+.tree-container {
+	--tree-motion: var(--mdtk-motion-slow, 320ms);
+	--tree-ease-open: cubic-bezier(0.22, 0.78, 0.24, 1);
+	/* Exact time-reverse of --tree-ease-open. */
+	--tree-ease-close: cubic-bezier(0.76, 0, 0.78, 0.22);
+}
+
+/* Keep a folder's DOM in place while its row closes. Animating a measured
+   height used to force layout on every frame; a single grid track can move
+   between the content height and zero smoothly and remains interruptible. */
+.tree-branch {
+	display: grid;
+	grid-template-rows: 0fr;
+	opacity: 0;
+	transform: translateY(-4px);
+	transition:
+		grid-template-rows var(--tree-motion) var(--tree-ease-close),
+		opacity var(--tree-motion) var(--tree-ease-close),
+		transform var(--tree-motion) var(--tree-ease-close);
+}
+
+.tree-branch.is-expanded {
+	grid-template-rows: 1fr;
+	opacity: 1;
+	transform: translateY(0);
+	transition-timing-function: var(--tree-ease-open);
+}
+
+.tree-branch.is-collapsed {
+	pointer-events: none;
+}
+
+.tree-branch-inner {
+	min-height: 0;
+	overflow: hidden;
+	transform-origin: top center;
+}
+
 .tree-container > ul:first-of-type{
 	padding: 0;
 }
@@ -59,8 +97,62 @@
 	display: none;
 }
 
-.tree-container li span.tree-mod_icon, .tree-container li span.tree-mod_icon *{
+.tree-container li span.tree-mod_icon:not(.tree-parent_icon),
+.tree-container li span.tree-mod_icon:not(.tree-parent_icon) *{
 	transform: translateY(1px);
+}
+
+.tree-container li span.tree-mod_icon.tree-parent_icon {
+	display: inline-grid;
+	flex: 0 0 22px;
+	width: 22px;
+	height: 22px;
+	place-items: center;
+	transform-origin: center;
+}
+
+.tree-container li span.tree-mod_icon.tree-parent_icon .tree-parent_icon-layer {
+	grid-area: 1 / 1;
+	display: grid;
+	place-items: center;
+	transition:
+		opacity var(--tree-motion) var(--tree-ease-close),
+		transform var(--tree-motion) var(--tree-ease-close);
+}
+
+.tree-container li span.tree-mod_icon.tree-parent_icon .tree-parent_icon-closed {
+	opacity: 1;
+	transform: translateY(0) scale(1);
+}
+
+.tree-container li span.tree-mod_icon.tree-parent_icon .tree-parent_icon-open {
+	opacity: 0;
+	transform: translateY(2px) scale(0.88);
+}
+
+.tree-container li span.tree-item.expanded .tree-parent_icon-layer {
+	transition-timing-function: var(--tree-ease-open);
+}
+
+.tree-container li span.tree-item.expanded .tree-parent_icon-closed {
+	opacity: 0;
+	transform: translateY(-2px) scale(0.88);
+}
+
+.tree-container li span.tree-item.expanded .tree-parent_icon-open {
+	opacity: 1;
+	transform: translateY(0) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tree-branch {
+		transform: none;
+		transition: none;
+	}
+
+	.tree-container li span.tree-mod_icon.tree-parent_icon .tree-parent_icon-layer {
+		transition: none;
+	}
 }
 
 .tree-container ul ul li span.tree-item.tree-leaf {

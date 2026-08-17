@@ -215,6 +215,18 @@ async function moveDir(oldDirPath, newDirPath) {
         return;
     }
 
+    if (isTauriFs()) {
+        try {
+            await tauriRemoveDir(oldDirPath);
+        } catch (err) {
+            logError('moveDir: failed to remove old Tauri dir', oldDirPath, err);
+            return;
+        }
+        removeMemDir(oldDirPath);
+        log(`Dir ${oldDirPath} moved to ${newDirPath}.`);
+        return;
+    }
+
     const oldParts = trimPrefix(oldDirPath, '/').split('/').filter(Boolean);
     const oldDirName = oldParts.pop();
     const rootHandle = await getRootDirHandle();
@@ -226,6 +238,7 @@ async function moveDir(oldDirPath, newDirPath) {
         await oldParentHandle.removeEntry(oldDirName, { recursive: true });
     } catch (err) {
         logError('moveDir: removeEntry old dir failed', oldDirPath, err);
+        return;
     }
 
     removeMemDir(oldDirPath);

@@ -316,6 +316,7 @@ async function moveFile(oldPath, newPath) {
     log(`Moved ${oldPath} to ${newPath}`);
   } catch (error) {
     logError("Error moving file:", error);
+    throw error;
   }
 }
 async function openFile(path, saveToHistory = true, el = "editor-textarea") {
@@ -513,10 +514,16 @@ async function syncCurrentFile(switchAwayEditor = false) {
     if (hasFilenameChanged) {
       log("Filename has changed from ", filename, "to", newFilename);
       const newPath = joinPath(toDirPath(path), newFilename);
-      let content2 = getCurrentContent();
+      const content2 = getCurrentContent();
+      if (await exists(newPath)) {
+        showToast(`A file named "${newFilename}" already exists`);
+        isMessingWithCurrentEditor = false;
+        return;
+      }
       let newHandle;
       try {
-        newHandle = await getFileHandle(newPath, true);
+        await write(newPath, content2);
+        newHandle = await getFileHandle(newPath);
       } catch (error) {
         logError("Cannot rename, filesystem rejected new name:", newPath, error);
         alert(`Cannot rename file to "${newFilename}": ${error.message || error.name}`);
@@ -524,8 +531,6 @@ async function syncCurrentFile(switchAwayEditor = false) {
         return;
       }
       currentEditor.path = newPath;
-      await remove(path);
-      log("Removed due to filename change", path);
       addMemFile(newPath, {
         isFile: true,
         content: content2,
@@ -533,8 +538,9 @@ async function syncCurrentFile(switchAwayEditor = false) {
         path: newPath,
         handle: newHandle
       });
-      await writeIfContentIsDifferent(newPath, getCurrentContent());
       log("Created", newPath);
+      await remove(path);
+      log("Removed due to filename change", path);
       await renderSidebar();
       isMessingWithCurrentEditor = false;
       return;

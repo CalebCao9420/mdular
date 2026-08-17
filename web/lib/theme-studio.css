@@ -1,0 +1,792 @@
+/*
+ * MD Toolkit Studio shell
+ *
+ * A self-contained visual sample for the application chrome. It deliberately
+ * leaves editor semantics and plugin layouts alone, so the direction can be
+ * reviewed (or removed) without entangling product behaviour.
+ */
+
+:root {
+    --mdtk-motion-fast: 120ms;
+    --mdtk-motion-normal: 220ms;
+    --mdtk-motion-slow: 320ms;
+    --mdtk-ease-out: cubic-bezier(0.22, 0.78, 0.24, 1);
+    --mdtk-ease-spring: cubic-bezier(0.2, 0.9, 0.3, 1.15);
+    --mdtk-radius-sm: 8px;
+    --mdtk-radius-md: 12px;
+    --mdtk-radius-lg: 16px;
+    --mdtk-rail-width: 52px;
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --mdtk-shell: #e9e9e3;
+        --mdtk-rail: #e4e5df;
+        --mdtk-sidebar: #f3f3ee;
+        --mdtk-paper: #fbfaf6;
+        --mdtk-surface: #ffffff;
+        --mdtk-surface-muted: #eeeee8;
+        --mdtk-border: #d4d7cf;
+        --mdtk-border-strong: #b9c0b7;
+        --mdtk-text: #252a26;
+        --mdtk-muted: #737b74;
+        --mdtk-accent: #3f7468;
+        --mdtk-accent-soft: #dceae4;
+        --mdtk-warm: #c67649;
+        --mdtk-shadow-color: rgba(41, 49, 44, 0.14);
+
+        --color-neo-bg: var(--mdtk-paper) !important;
+        --color-neo-text: var(--mdtk-text) !important;
+        --color-neo-border: var(--mdtk-border) !important;
+        --color-neo-blue: var(--mdtk-accent) !important;
+        --color-neo-lime: var(--mdtk-accent-soft) !important;
+        --color-neo-orange: var(--mdtk-warm) !important;
+        --col-tx: var(--mdtk-text) !important;
+        --col-tx-alt: var(--mdtk-muted) !important;
+        --col-bg: var(--mdtk-paper) !important;
+        --col-bg-alt: var(--mdtk-sidebar) !important;
+        --col-bg-active: var(--mdtk-surface-muted) !important;
+        --col-border: var(--mdtk-border) !important;
+        --col-link: var(--mdtk-accent) !important;
+        --col-link-hover: var(--mdtk-warm) !important;
+        --col-tx-hover: var(--mdtk-accent) !important;
+        --col-accent: var(--mdtk-accent) !important;
+        --col-marker: var(--mdtk-warm) !important;
+        --col-tx-sel: color-mix(in srgb, var(--mdtk-accent) 28%, transparent) !important;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --mdtk-shell: #121715;
+        --mdtk-rail: #171d1a;
+        --mdtk-sidebar: #1b221f;
+        --mdtk-paper: #202824;
+        --mdtk-surface: #28312d;
+        --mdtk-surface-muted: #252d29;
+        --mdtk-border: #35413b;
+        --mdtk-border-strong: #4c5b53;
+        --mdtk-text: #e8ece8;
+        --mdtk-muted: #9ba69f;
+        --mdtk-accent: #82b8a7;
+        --mdtk-accent-soft: #29453c;
+        --mdtk-warm: #dfa06f;
+        --mdtk-shadow-color: rgba(0, 0, 0, 0.38);
+
+        --color-neo-bg: var(--mdtk-paper) !important;
+        --color-neo-text: var(--mdtk-text) !important;
+        --color-neo-border: var(--mdtk-border) !important;
+        --color-neo-blue: var(--mdtk-accent) !important;
+        --color-neo-lime: var(--mdtk-accent-soft) !important;
+        --color-neo-orange: var(--mdtk-warm) !important;
+        --col-tx: var(--mdtk-text) !important;
+        --col-tx-alt: var(--mdtk-muted) !important;
+        --col-bg: var(--mdtk-paper) !important;
+        --col-bg-alt: var(--mdtk-sidebar) !important;
+        --col-bg-active: var(--mdtk-surface-muted) !important;
+        --col-border: var(--mdtk-border) !important;
+        --col-link: var(--mdtk-accent) !important;
+        --col-link-hover: var(--mdtk-warm) !important;
+        --col-tx-hover: var(--mdtk-accent) !important;
+        --col-accent: var(--mdtk-accent) !important;
+        --col-marker: var(--mdtk-warm) !important;
+        --col-tx-sel: color-mix(in srgb, var(--mdtk-accent) 34%, transparent) !important;
+    }
+}
+
+body {
+    background: var(--mdtk-shell);
+    letter-spacing: -0.006em;
+    animation: mdtk-shell-enter var(--mdtk-motion-slow) var(--mdtk-ease-out) both;
+}
+
+button,
+input,
+textarea,
+select {
+    font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--mdtk-accent) !important;
+    outline-offset: 2px;
+}
+
+/* Activity rail + workspace tree */
+#sidebar {
+    width: 304px !important;
+    padding-left: 0;
+    background: var(--mdtk-sidebar);
+    border-right: 1px solid var(--mdtk-border);
+    box-shadow: 8px 0 28px color-mix(in srgb, var(--mdtk-shadow-color) 42%, transparent);
+    isolation: isolate;
+}
+
+#toolbar {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--mdtk-rail-width);
+    height: 100%;
+    padding: 10px 7px;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: center;
+    align-content: center;
+    gap: 6px;
+    background: var(--mdtk-rail);
+    border-right: 1px solid var(--mdtk-border);
+    overflow: visible;
+}
+
+#toolbar::before {
+    content: "M";
+    width: 34px;
+    height: 34px;
+    margin-bottom: 7px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--mdtk-border-strong);
+    border-radius: 11px;
+    background: var(--mdtk-paper);
+    color: var(--mdtk-accent);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--mdtk-shadow-color) 35%, transparent);
+    font-size: 16px;
+    font-weight: 750;
+    line-height: 1;
+    letter-spacing: -0.04em;
+}
+
+#toolbar button {
+    width: 36px;
+    height: 36px;
+    margin: 0;
+    padding: 7px;
+    display: grid;
+    place-items: center;
+    border: 1px solid transparent;
+    border-radius: 10px !important;
+    color: var(--mdtk-muted);
+    transition:
+        color var(--mdtk-motion-fast) ease,
+        background-color var(--mdtk-motion-fast) ease,
+        border-color var(--mdtk-motion-fast) ease,
+        transform var(--mdtk-motion-fast) var(--mdtk-ease-spring);
+}
+
+#toolbar button svg {
+    width: 20px;
+    height: 20px;
+    color: currentColor !important;
+    stroke: currentColor !important;
+    background: transparent !important;
+}
+
+#toolbar button svg circle {
+    fill: transparent !important;
+}
+
+#toolbar button:hover,
+#toolbar button.active,
+#toolbar button[aria-pressed="true"] {
+    color: var(--mdtk-accent);
+    background: var(--mdtk-surface);
+    border-color: var(--mdtk-border);
+    transform: translateY(-1px);
+}
+
+#toolbar button:hover svg,
+#toolbar button.active svg,
+#toolbar button[aria-pressed="true"] svg {
+    color: currentColor !important;
+    stroke: currentColor !important;
+    background: transparent !important;
+}
+
+#toolbar button:active {
+    transform: scale(0.93);
+}
+
+#new-file svg {
+    top: 0;
+}
+
+#toolbar button::after {
+    top: 50%;
+    left: calc(100% + 11px);
+    margin: 0;
+    padding: 6px 10px;
+    transform: translate(-4px, -50%);
+    border: 1px solid color-mix(in srgb, var(--mdtk-border) 65%, transparent);
+    border-radius: 8px;
+    background: var(--mdtk-text);
+    color: var(--mdtk-paper);
+    box-shadow: 0 8px 24px var(--mdtk-shadow-color);
+    transition:
+        opacity var(--mdtk-motion-fast) ease,
+        transform var(--mdtk-motion-fast) var(--mdtk-ease-out);
+}
+
+#toolbar button::before {
+    top: 50%;
+    left: 100%;
+    margin: 0;
+    transform: translate(4px, -50%);
+    border: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-right: 6px solid var(--mdtk-text);
+    transition:
+        opacity var(--mdtk-motion-fast) ease,
+        transform var(--mdtk-motion-fast) var(--mdtk-ease-out);
+}
+
+#toolbar button:hover::after {
+    transform: translate(0, -50%);
+}
+
+#toolbar button:hover::before {
+    transform: translate(6px, -50%);
+}
+
+#tree,
+#reading-panel,
+#open-folder {
+    margin-left: var(--mdtk-rail-width);
+}
+
+#tree {
+    padding: 8px 8px 16px;
+    background: var(--mdtk-sidebar);
+    scrollbar-gutter: stable;
+}
+
+#tree::before {
+    content: "WORKSPACE";
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    display: block;
+    margin: -8px -8px 7px;
+    padding: 14px 12px 8px;
+    background: color-mix(in srgb, var(--mdtk-sidebar) 92%, transparent);
+    backdrop-filter: blur(10px);
+    color: var(--mdtk-muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+}
+
+.tree-container li span.tree-item {
+    min-height: 31px;
+    margin: 2px 0;
+    padding: 6px 9px;
+    border: 1px solid transparent;
+    border-radius: var(--mdtk-radius-sm) !important;
+    color: var(--mdtk-muted);
+    font-size: 1em;
+    transition:
+        color var(--mdtk-motion-fast) ease,
+        background-color var(--mdtk-motion-fast) ease,
+        border-color var(--mdtk-motion-fast) ease,
+        transform var(--mdtk-motion-fast) var(--mdtk-ease-out);
+}
+
+.tree-container li span.tree-item:hover {
+    background: var(--mdtk-surface) !important;
+    border-color: var(--mdtk-border);
+    color: var(--mdtk-text) !important;
+    transform: translateX(2px);
+}
+
+.tree-container span.tree-item.tree-leaf.selected,
+.tree-container span.tree-item.tree-leaf.selected:hover {
+    background: var(--mdtk-accent-soft) !important;
+    border-color: color-mix(in srgb, var(--mdtk-accent) 32%, var(--mdtk-border));
+    box-shadow: inset 3px 0 var(--mdtk-accent);
+    color: var(--mdtk-accent) !important;
+}
+
+.tree-container li span.tree-item:hover .tree-mod_icon svg,
+.tree-container span.tree-item.tree-leaf.selected .tree-mod_icon svg,
+.tree-container span.tree-item.tree-leaf.selected:hover .tree-mod_icon svg {
+    stroke: currentColor !important;
+}
+
+.tree-mod_icon svg {
+    stroke: currentColor;
+    transition: stroke var(--mdtk-motion-fast) ease;
+}
+
+.tree-group_title {
+    padding: 10px 9px 5px;
+    color: var(--mdtk-muted);
+    font-size: 0.72em;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+#close-sidebar {
+    top: 8px;
+    right: 8px;
+    width: 30px;
+    height: 30px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--mdtk-sidebar) 86%, transparent);
+    color: var(--mdtk-muted) !important;
+    opacity: 0.58;
+    transition:
+        opacity var(--mdtk-motion-fast) ease,
+        color var(--mdtk-motion-fast) ease,
+        background-color var(--mdtk-motion-fast) ease,
+        transform var(--mdtk-motion-fast) var(--mdtk-ease-spring);
+}
+
+#sidebar:hover #close-sidebar {
+    opacity: 0.82;
+}
+
+#close-sidebar:hover {
+    background: var(--mdtk-surface);
+    color: var(--mdtk-warm) !important;
+    opacity: 1 !important;
+    transform: scale(1.04);
+}
+
+.resize::after {
+    background: transparent;
+    transition: background-color var(--mdtk-motion-fast) ease, width var(--mdtk-motion-fast) ease;
+}
+
+.resize:hover::after {
+    width: 3px;
+    right: 5px;
+    background: var(--mdtk-accent);
+}
+
+#open-folder {
+    margin-top: 8px;
+    margin-right: 10px;
+    margin-bottom: 12px;
+    padding: 9px 10px;
+    border: 1px dashed var(--mdtk-border-strong);
+    border-radius: var(--mdtk-radius-md);
+    background: color-mix(in srgb, var(--mdtk-accent-soft) 58%, transparent);
+    color: var(--mdtk-accent);
+    transition:
+        border-color var(--mdtk-motion-fast) ease,
+        background-color var(--mdtk-motion-fast) ease,
+        transform var(--mdtk-motion-fast) var(--mdtk-ease-out);
+}
+
+#open-folder:hover {
+    border-color: var(--mdtk-accent);
+    background: var(--mdtk-accent-soft);
+    color: var(--mdtk-accent);
+    transform: translateY(-1px);
+}
+
+#open-folder svg,
+#open-folder:hover svg {
+    stroke: currentColor;
+}
+
+/* Calm editor plane */
+#content {
+    position: relative;
+    background:
+        radial-gradient(circle at 78% -12%, color-mix(in srgb, var(--mdtk-accent) 9%, transparent), transparent 38%),
+        var(--mdtk-paper);
+}
+
+#editor-container,
+#editor2-container,
+.CodeMirror,
+.CodeMirror-scroll {
+    background-color: transparent !important;
+}
+
+.CodeMirror-scroll {
+    padding-top: 3em;
+    padding-bottom: 5em;
+    background:
+        radial-gradient(circle at 78% -12%, color-mix(in srgb, var(--mdtk-accent) 8%, transparent), transparent 38%),
+        var(--mdtk-paper) !important;
+}
+
+.CodeMirror-activeline-background {
+    background: color-mix(in srgb, var(--mdtk-accent) 6%, transparent) !important;
+}
+
+.CodeMirror-cursor {
+    border-left-color: var(--mdtk-warm) !important;
+    background: transparent !important;
+}
+
+.CodeMirror-hints {
+    padding: 5px !important;
+    border: 1px solid var(--mdtk-border) !important;
+    border-radius: var(--mdtk-radius-md) !important;
+    background: var(--mdtk-surface) !important;
+    box-shadow: 0 14px 36px var(--mdtk-shadow-color) !important;
+    animation: mdtk-pop-in var(--mdtk-motion-normal) var(--mdtk-ease-out) both;
+}
+
+.CodeMirror-hint {
+    border-radius: 7px;
+}
+
+.CodeMirror-hint-active {
+    background: var(--mdtk-accent-soft) !important;
+    color: var(--mdtk-accent) !important;
+}
+
+/* Popovers, dialogs and transient feedback */
+#search,
+#move,
+#new-file-template,
+#project-scaffold {
+    padding: 10px;
+    border: 1px solid var(--mdtk-border);
+    border-radius: var(--mdtk-radius-lg);
+    background: color-mix(in srgb, var(--mdtk-surface) 96%, transparent);
+    box-shadow: 0 18px 52px var(--mdtk-shadow-color);
+    backdrop-filter: blur(18px);
+    animation: mdtk-pop-in var(--mdtk-motion-normal) var(--mdtk-ease-out) both;
+}
+
+#search-input,
+#move-input {
+    padding: 10px 12px;
+    border: 1px solid var(--mdtk-border);
+    border-radius: 10px;
+    background: var(--mdtk-paper);
+    color: var(--mdtk-text);
+    transition: border-color var(--mdtk-motion-fast) ease, box-shadow var(--mdtk-motion-fast) ease;
+}
+
+#search-input:focus,
+#move-input:focus {
+    border-color: var(--mdtk-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--mdtk-accent) 16%, transparent);
+}
+
+#search-results li,
+#move-results li,
+#new-file-template-options li,
+#project-scaffold-options li {
+    border: 1px solid transparent;
+    border-radius: 9px;
+    transition:
+        color var(--mdtk-motion-fast) ease,
+        background-color var(--mdtk-motion-fast) ease,
+        border-color var(--mdtk-motion-fast) ease,
+        transform var(--mdtk-motion-fast) var(--mdtk-ease-out);
+}
+
+#search-results .focused,
+#move-results .focused,
+#new-file-template-options li.focused,
+#project-scaffold-options li.focused {
+    background: var(--mdtk-accent-soft) !important;
+    border-color: color-mix(in srgb, var(--mdtk-accent) 28%, var(--mdtk-border));
+    border-radius: 9px !important;
+    color: var(--mdtk-accent) !important;
+    transform: translateX(2px);
+}
+
+.sidebar-ctx-menu {
+    padding: 5px;
+    border: 1px solid var(--mdtk-border);
+    border-radius: var(--mdtk-radius-md);
+    background: color-mix(in srgb, var(--mdtk-surface) 96%, transparent);
+    box-shadow: 0 16px 42px var(--mdtk-shadow-color);
+    backdrop-filter: blur(16px);
+    animation: mdtk-pop-in var(--mdtk-motion-normal) var(--mdtk-ease-out) both;
+}
+
+.sidebar-ctx-menu-item {
+    border-radius: 7px;
+    transition: background-color var(--mdtk-motion-fast) ease, color var(--mdtk-motion-fast) ease;
+}
+
+.sidebar-ctx-menu-item:hover {
+    background: var(--mdtk-accent-soft);
+    color: var(--mdtk-accent);
+}
+
+#vcs-menu,
+.mdtk-update-overlay {
+    background: color-mix(in srgb, #080b09 52%, transparent);
+    backdrop-filter: blur(6px);
+}
+
+.vcs-menu-panel,
+.mdtk-update-panel {
+    border: 1px solid var(--mdtk-border);
+    border-radius: var(--mdtk-radius-lg);
+    background: var(--mdtk-surface);
+    box-shadow: 0 24px 72px var(--mdtk-shadow-color);
+    animation: mdtk-pop-in var(--mdtk-motion-normal) var(--mdtk-ease-out) both;
+}
+
+.vcs-menu-actions button,
+.mdtk-workspace-hint-actions button,
+.mdtk-update-dismiss {
+    border: 1px solid var(--mdtk-border);
+    border-radius: 9px;
+    background: var(--mdtk-paper);
+    color: var(--mdtk-text);
+    transition:
+        color var(--mdtk-motion-fast) ease,
+        background-color var(--mdtk-motion-fast) ease,
+        border-color var(--mdtk-motion-fast) ease,
+        transform var(--mdtk-motion-fast) var(--mdtk-ease-spring);
+}
+
+.vcs-menu-actions button:hover,
+.mdtk-workspace-hint-actions button:hover,
+.mdtk-update-dismiss:hover {
+    border-color: var(--mdtk-accent);
+    background: var(--mdtk-accent-soft);
+    color: var(--mdtk-accent);
+    transform: translateY(-1px);
+}
+
+.mdtk-workspace-hint {
+    border-bottom: 1px solid var(--mdtk-border);
+    background: color-mix(in srgb, var(--mdtk-accent-soft) 62%, var(--mdtk-sidebar));
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.mdtk-workspace-hint-text code {
+    font-size: 12px;
+}
+
+.mdtk-workspace-hint-actions button {
+    padding: 6px 11px;
+    font-size: 12px;
+}
+
+#editor2-container {
+    border-left: 1px solid var(--mdtk-border);
+    box-shadow: -18px 0 44px color-mix(in srgb, var(--mdtk-shadow-color) 62%, transparent);
+}
+
+#editor-container > .CodeMirror .CodeMirror-scroll {
+    transition:
+        padding-left var(--mdtk-motion-slow) var(--mdtk-ease-out),
+        padding-right var(--mdtk-motion-slow) var(--mdtk-ease-out);
+}
+
+/* HyperMD's horizontal rule has two equally important states: raw `---` while
+   editing and the rendered rule while resting. Both now share one reversible
+   transform so neither state pops into existence. */
+.cm-s-hypermd-light pre.HyperMD-hr {
+    background-color: transparent;
+}
+
+.cm-s-hypermd-light pre.HyperMD-hr > span {
+    display: inline-block;
+    opacity: 1;
+    transform: scaleX(1);
+    transform-origin: center;
+}
+
+.cm-s-hypermd-light pre.hmd-inactive-line.HyperMD-hr {
+    color: inherit;
+    background-color: transparent;
+}
+
+.cm-s-hypermd-light pre.hmd-inactive-line.HyperMD-hr > span {
+    opacity: 0;
+    transform: scaleX(0.72);
+}
+
+.cm-s-hypermd-light div.HyperMD-hr-bg {
+    opacity: 0;
+    transform: scaleX(0.72);
+    transform-origin: center;
+}
+
+.cm-s-hypermd-light div.HyperMD-hr-bg.mdtk-hr-rendered {
+    opacity: 1;
+    transform: scaleX(1);
+}
+
+.hmd-image-preview-modal {
+    background: color-mix(in srgb, #080c0a 82%, transparent);
+    backdrop-filter: blur(7px);
+}
+
+.hmd-image-preview {
+    border-color: color-mix(in srgb, var(--mdtk-border-strong) 70%, transparent);
+    box-shadow: 0 28px 80px color-mix(in srgb, var(--mdtk-shadow-color) 82%, transparent);
+}
+
+#nav-buttons {
+    top: 8px;
+    right: 8px;
+    gap: 3px;
+    padding: 4px;
+    border: 1px solid var(--mdtk-border);
+    border-radius: 11px;
+    background: color-mix(in srgb, var(--mdtk-surface) 92%, transparent);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--mdtk-shadow-color) 55%, transparent);
+    backdrop-filter: blur(12px);
+}
+
+.nav-button,
+#close-editor2 {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    transition: background-color var(--mdtk-motion-fast) ease, transform var(--mdtk-motion-fast) var(--mdtk-ease-spring);
+}
+
+.nav-button:hover,
+#close-editor2:hover {
+    background: var(--mdtk-accent-soft);
+    transform: scale(1.04);
+}
+
+#open-sidebar {
+    left: 7px;
+    top: calc(50% - 36px);
+    width: 8px;
+    height: 72px;
+    border-radius: 999px;
+    background: var(--mdtk-accent);
+    opacity: 0.34;
+    transition: opacity var(--mdtk-motion-fast) ease, transform var(--mdtk-motion-fast) var(--mdtk-ease-spring);
+}
+
+#open-sidebar:hover {
+    opacity: 0.9;
+    transform: scaleX(1.35);
+}
+
+#reading-panel {
+    border-bottom: 1px solid var(--mdtk-border);
+    background: var(--mdtk-sidebar);
+}
+
+.doc-meta-chip {
+    border-color: var(--mdtk-border);
+    background: var(--mdtk-surface);
+}
+
+.doc-toc-item {
+    border-radius: var(--mdtk-radius-sm);
+    transition: color var(--mdtk-motion-fast) ease, background-color var(--mdtk-motion-fast) ease, transform var(--mdtk-motion-fast) var(--mdtk-ease-out);
+}
+
+.doc-toc-item:hover {
+    background: var(--mdtk-surface);
+    color: var(--mdtk-text);
+    transform: translateX(2px);
+}
+
+.mdtk-toast {
+    --mdtk-toast-duration: 1500ms;
+    position: fixed;
+    top: 12px;
+    z-index: 9999;
+    max-width: min(480px, calc(100vw - 32px));
+    padding: 9px 14px;
+    border: 1px solid var(--mdtk-border);
+    border-radius: 11px;
+    background: color-mix(in srgb, var(--mdtk-surface) 94%, transparent);
+    box-shadow: 0 14px 40px var(--mdtk-shadow-color);
+    color: var(--mdtk-text);
+    font-size: 14px;
+    line-height: 1.4;
+    backdrop-filter: blur(14px);
+    pointer-events: none;
+    animation: mdtk-toast-lifecycle var(--mdtk-toast-duration) var(--mdtk-ease-out) both;
+}
+
+* {
+    scrollbar-color: var(--mdtk-border-strong) transparent;
+    scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background: var(--mdtk-border-strong);
+    background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--mdtk-muted);
+    background-clip: padding-box;
+}
+
+@keyframes mdtk-shell-enter {
+    from { opacity: 0.72; }
+    to { opacity: 1; }
+}
+
+@keyframes mdtk-pop-in {
+    from {
+        opacity: 0;
+        transform: translateY(-7px) scale(0.985);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes mdtk-toast-lifecycle {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -8px) scale(0.98);
+    }
+    10%, 84% {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -5px) scale(0.99);
+    }
+}
+
+@media (max-width: 670px) {
+    #sidebar {
+        width: min(88vw, 340px) !important;
+    }
+
+    :root {
+        --mdtk-rail-width: 48px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        transition-delay: 0ms !important;
+    }
+}

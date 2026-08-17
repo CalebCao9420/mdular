@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::sync::Mutex;
 use std::time::UNIX_EPOCH;
 
@@ -28,36 +28,91 @@ fn normalize_relative(relative_path: &str) -> PathBuf {
     )
 }
 
-fn resolve_in_workspace(root: &Path, relative_path: &str) -> Result<PathBuf, String> {
+fn checked_relative_path(relative_path: &str) -> Result<PathBuf, String> {
     let rel = normalize_relative(relative_path);
-    let joined = root.join(&rel);
-    let canonical_root = root
-        .canonicalize()
-        .map_err(|e| format!("workspace root invalid: {e}"))?;
-    let canonical_joined = joined
-        .canonicalize()
-        .or_else(|_| {
-            if let Some(parent) = joined.parent() {
-                parent.canonicalize().map(|p| {
-                    p.join(
-                        joined
-                            .file_name()
-                            .unwrap_or_else(|| std::ffi::OsStr::new("")),
-                    )
-                })
-            } else {
-                Err(std::io::Error::new(
-                    std::io::ErrorKind::NotFound,
-                    "missing parent",
-                ))
-            }
-        })
-        .map_err(|e| e.to_string())?;
+    if rel.as_os_str().is_empty() {
+        return Err("path must not be empty".into());
+    }
 
-    if !canonical_joined.starts_with(&canonical_root) {
+    for component in rel.components() {
+        let Component::Normal(segment) = component else {
+            return Err("path escapes workspace".into());
+        };
+
+        #[cfg(windows)]
+        if segment.to_string_lossy().contains(':') {
+            return Err("invalid Windows path component".into());
+        }
+    }
+
+    Ok(rel)
+}
+
+fn canonical_workspace_root(root: &Path) -> Result<PathBuf, String> {
+    root.canonicalize()
+        .map_err(|e| format!("workspace root invalid: {e}"))
+}
+
+fn ensure_workspace_target(
+    canonical_root: &Path,
+    canonical_target: &Path,
+    allow_root: bool,
+) -> Result<(), String> {
+    if !canonical_target.starts_with(canonical_root) {
         return Err("path escapes workspace".into());
     }
-    Ok(canonical_joined)
+    if !allow_root && canonical_target == canonical_root {
+        return Err("refusing to operate on workspace root".into());
+    }
+    Ok(())
+}
+
+fn metadata_is_link_or_reparse(metadata: &std::fs::Metadata) -> bool {
+    if metadata.file_type().is_symlink() {
+        return true;
+    }
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x0400;
+        if metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn reject_link_components(canonical_root: &Path, rel: &Path) -> Result<(), String> {
+    let mut current = canonical_root.to_path_buf();
+    for component in rel.components() {
+        let Component::Normal(segment) = component else {
+            return Err("path escapes workspace".into());
+        };
+        current.push(segment);
+
+        match std::fs::symlink_metadata(&current) {
+            Ok(metadata) if metadata_is_link_or_reparse(&metadata) => {
+                return Err("symbolic links and reparse points are not allowed".into());
+            }
+            Ok(_) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => break,
+            Err(error) => return Err(error.to_string()),
+        }
+    }
+    Ok(())
+}
+
+fn resolve_in_workspace(root: &Path, relative_path: &str) -> Result<PathBuf, String> {
+    let rel = checked_relative_path(relative_path)?;
+    let canonical_root = canonical_workspace_root(root)?;
+    reject_link_components(&canonical_root, &rel)?;
+
+    let joined = canonical_root.join(&rel);
+    let canonical_joined = joined.canonicalize().map_err(|e| e.to_string())?;
+    ensure_workspace_target(&canonical_root, &canonical_joined, false)?;
+    Ok(joined)
 }
 
 fn workspace_root(state: &State<AppState>) -> Result<PathBuf, String> {
@@ -70,16 +125,23 @@ fn workspace_root(state: &State<AppState>) -> Result<PathBuf, String> {
 }
 
 fn resolve_write_path(root: &Path, relative_path: &str) -> Result<PathBuf, String> {
-    let rel = normalize_relative(relative_path);
-    for component in rel.components() {
-        if matches!(
-            component,
-            std::path::Component::ParentDir | std::path::Component::RootDir
-        ) {
-            return Err("path escapes workspace".into());
-        }
+    let rel = checked_relative_path(relative_path)?;
+    let canonical_root = canonical_workspace_root(root)?;
+    reject_link_components(&canonical_root, &rel)?;
+
+    let joined = canonical_root.join(&rel);
+    let mut existing_ancestor = joined.as_path();
+    while !existing_ancestor.exists() {
+        existing_ancestor = existing_ancestor
+            .parent()
+            .ok_or_else(|| "path has no existing ancestor".to_string())?;
     }
-    Ok(root.join(&rel))
+
+    let canonical_ancestor = existing_ancestor
+        .canonicalize()
+        .map_err(|e| e.to_string())?;
+    ensure_workspace_target(&canonical_root, &canonical_ancestor, true)?;
+    Ok(joined)
 }
 
 fn file_modified_ms(path: &Path) -> u64 {
@@ -132,15 +194,23 @@ fn walk_workspace_files(
         let entry = entry.map_err(|e| e.to_string())?;
         let name = entry.file_name().to_string_lossy().into_owned();
         let path = entry.path();
+        let metadata = std::fs::symlink_metadata(&path).map_err(|e| e.to_string())?;
 
-        if path.is_dir() {
+        // Do not follow links or Windows reparse points while walking. Without
+        // this guard, a linked directory inside a workspace could expose files
+        // from anywhere on disk through mdtk_list_files.
+        if metadata_is_link_or_reparse(&metadata) {
+            continue;
+        }
+
+        if metadata.is_dir() {
             if name.starts_with('.') {
                 continue;
             }
             let mut next_prefix = rel_prefix.to_path_buf();
             next_prefix.push(&name);
             walk_workspace_files(&path, &next_prefix, depth + 1, out)?;
-        } else if path.is_file() && is_supported_file(&name) {
+        } else if metadata.is_file() && is_supported_file(&name) {
             let mut rel = rel_prefix.to_path_buf();
             rel.push(&name);
             out.push(ListedFile {
@@ -165,6 +235,7 @@ fn mdtk_get_workspace_path(state: State<AppState>) -> Option<String> {
 #[tauri::command]
 fn mdtk_list_files(state: State<AppState>) -> Result<Vec<ListedFile>, String> {
     let root = workspace_root(&state)?;
+    let root = canonical_workspace_root(&root)?;
     let mut files = Vec::new();
     walk_workspace_files(&root, Path::new(""), 0, &mut files)?;
     files.sort_by(|a, b| a.relative_path.cmp(&b.relative_path));
@@ -174,14 +245,14 @@ fn mdtk_list_files(state: State<AppState>) -> Result<Vec<ListedFile>, String> {
 #[tauri::command]
 fn mdtk_exists(state: State<AppState>, relative_path: String) -> Result<bool, String> {
     let root = workspace_root(&state)?;
-    let path = root.join(normalize_relative(&relative_path));
+    let path = resolve_write_path(&root, &relative_path)?;
     Ok(path.exists())
 }
 
 #[tauri::command]
 fn mdtk_is_dir(state: State<AppState>, relative_path: String) -> Result<bool, String> {
     let root = workspace_root(&state)?;
-    let path = root.join(normalize_relative(&relative_path));
+    let path = resolve_write_path(&root, &relative_path)?;
     Ok(path.is_dir())
 }
 
@@ -251,21 +322,7 @@ fn mdtk_ensure_parent_dirs(state: State<AppState>, relative_path: String) -> Res
 #[tauri::command]
 fn mdtk_create_dir(state: State<AppState>, relative_path: String) -> Result<(), String> {
     let root = workspace_root(&state)?;
-    let rel = normalize_relative(&relative_path);
-    let path = root.join(&rel);
-    let canonical_root = root
-        .canonicalize()
-        .map_err(|e| format!("workspace root invalid: {e}"))?;
-    if let Ok(canonical) = path.canonicalize() {
-        if !canonical.starts_with(&canonical_root) {
-            return Err("path escapes workspace".into());
-        }
-    } else if let Some(parent) = path.parent() {
-        let parent_canonical = parent.canonicalize().map_err(|e| e.to_string())?;
-        if !parent_canonical.starts_with(&canonical_root) {
-            return Err("path escapes workspace".into());
-        }
-    }
+    let path = resolve_write_path(&root, &relative_path)?;
     std::fs::create_dir_all(&path).map_err(|e| e.to_string())
 }
 
@@ -282,16 +339,39 @@ fn mdtk_delete_file(state: State<AppState>, relative_path: String) -> Result<(),
 #[tauri::command]
 fn mdtk_remove_dir(state: State<AppState>, relative_path: String) -> Result<(), String> {
     let root = workspace_root(&state)?;
-    let rel = normalize_relative(&relative_path);
-    let path = root.join(&rel);
-    let canonical_root = root
-        .canonicalize()
-        .map_err(|e| format!("workspace root invalid: {e}"))?;
-    let canonical = path.canonicalize().map_err(|e| e.to_string())?;
-    if !canonical.starts_with(&canonical_root) {
-        return Err("path escapes workspace".into());
+    let path = resolve_in_workspace(&root, &relative_path)?;
+    if !path.is_dir() {
+        return Err("not a directory".into());
     }
-    std::fs::remove_dir_all(&canonical).map_err(|e| e.to_string())
+    std::fs::remove_dir_all(&path).map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn relative_path_rejects_empty_and_parent_components() {
+        assert!(checked_relative_path("").is_err());
+        assert!(checked_relative_path("/").is_err());
+        assert!(checked_relative_path("notes/../secret.md").is_err());
+    }
+
+    #[test]
+    fn relative_path_accepts_app_style_leading_slash() {
+        assert_eq!(
+            checked_relative_path("/notes/file.md").unwrap(),
+            PathBuf::from("notes").join("file.md")
+        );
+    }
+
+    #[test]
+    fn workspace_target_must_be_a_descendant_for_destructive_operations() {
+        let root = PathBuf::from("workspace");
+        assert!(ensure_workspace_target(&root, &root.join("notes"), false).is_ok());
+        assert!(ensure_workspace_target(&root, &root, false).is_err());
+        assert!(ensure_workspace_target(&root, Path::new("workspace-sibling"), false).is_err());
+    }
 }
 
 /// `--folder "D:\notes"` or `-Folder "D:\notes"` (matches launch.ps1 / start-tauri.bat).

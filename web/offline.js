@@ -17,7 +17,9 @@ const urlsToCache = [
     '/lib/theme-dark.css',
     '/lib/theme-brutal.css',
     '/lib/theme-brutal-dark.css',
+    '/lib/theme-studio.css',
     '/chat.css',
+    '/reading.css',
     '/lib/sidebar.js',
     '/lib/codemirror.js',
     '/lib/core.js',
@@ -43,7 +45,10 @@ const urlsToCache = [
     '/lib/codemirror-shell.js',
     '/lib/similarity.js',
     '/lib/emoji.js',
+    '/build-stamp.js',
     '/config.js',
+    '/desktop-shell.js',
+    '/tauri-fs.js',
     '/lib/fs.js',
     '/lib/md.js',
     '/app.js',
@@ -51,17 +56,29 @@ const urlsToCache = [
     '/files.js',
     '/editor.js',
     '/chat.js',
-    '/reading.css',
     '/reading-parse.js',
     '/reading.js',
     '/templates.js',
     '/project-structure.js',
-    '/project-structure.js',
     '/search.js',
-    '/kanban.css',
-    '/ticket-statuses.js',
-    '/kanban-frontmatter.js',
-    '/kanban.js',
+    '/mdtk-workspace-config.js',
+    '/plugins/chat-archive.js',
+    '/plugins.js',
+    '/vcs-repo.js',
+    '/vcs-menu.js',
+    '/vcs-dirty.js',
+    '/plugins/kanban/default-seeds.js',
+    '/plugins/kanban.css',
+    '/plugins/kanban/scripts.json',
+    '/plugins/kanban/ticket-statuses.js',
+    '/plugins/kanban/board-columns.js',
+    '/plugins/kanban/frontmatter.js',
+    '/plugins/kanban/board.js',
+    '/plugins/kanban/chat-archive.js',
+    '/plugins/kanban/index.js',
+    '/plugins/docs/scripts.json',
+    '/plugins/docs/chat-archive.js',
+    '/plugins/docs/index.js',
     '/modals.js',
     '/lib/latex/fold-math.js',
     '/lib/latex/katex.min.js',
@@ -111,7 +128,11 @@ self.addEventListener('install', event => {
         for (let url of urlsToCache) {
             // KaTeX fonts are referenced by katex.min.css with no version param,
             // so the cache key must match (no hash appended either).
-            const shouldAddRevisionHash = url !== "/" && url !== 'favicon.ico' && !url.startsWith('/img/') && !url.endsWith('.woff2');
+            const shouldAddRevisionHash = url !== "/"
+                && url !== '/favicon.ico'
+                && url !== '/manifest.json'
+                && !url.startsWith('/img/')
+                && !url.endsWith('.woff2');
             if (shouldAddRevisionHash) {
                 url = url + COMMIT_HASH;
             }
@@ -132,11 +153,11 @@ self.addEventListener("activate", (event) => {
 
     event.waitUntil(
         caches.keys().then((cacheNames) => {
-            return cacheNames.map((cache) => {
-                if (cache !== cacheName) {
-                    caches.delete(cache);
-                }
-            });
+            return Promise.all(
+                cacheNames
+                    .filter((cache) => cache !== cacheName)
+                    .map((cache) => caches.delete(cache))
+            );
         })
     );
 });
@@ -160,7 +181,7 @@ async function handleRequest(request) {
             // were partly loaded/cached :( It seems like Chromium fires
             // range requests for some files.
             if (response.status === 206) {
-                console.warn('⚠️ Partial content (206), not caching:', event.request.url);
+                console.warn('⚠️ Partial content (206), not caching:', request.url);
                 return response;
             }
 

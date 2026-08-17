@@ -64,9 +64,80 @@
     });
     //#endregion
     /********************************************************************************** */
-        //#region Addon Class
+    //#region Addon Class
     var hideClassName = "hmd-hidden-token";
     var lineInactiveClassName = "hmd-inactive-line";
+    var hrTextAnimations = new WeakMap();
+    var hrRuleAnimations = new WeakMap();
+    var hrTextKeyframes = [
+        { opacity: 1, transform: "scaleX(1)", offset: 0 },
+        { opacity: 0, transform: "scaleX(0.7)", offset: 0.72 },
+        { opacity: 0, transform: "scaleX(0.72)", offset: 1 },
+    ];
+    var hrRuleKeyframes = [
+        { opacity: 0, transform: "scaleX(0.72)", offset: 0 },
+        { opacity: 1, transform: "scaleX(1.035)", offset: 0.72 },
+        { opacity: 1, transform: "scaleX(1)", offset: 1 },
+    ];
+
+    function getHorizontalRuleMotionDuration(element) {
+        var raw = getComputedStyle(element).getPropertyValue("--mdtk-motion-slow").trim();
+        if (raw.endsWith("ms"))
+            return Number.parseFloat(raw) || 320;
+        if (raw.endsWith("s"))
+            return (Number.parseFloat(raw) || 0.32) * 1000;
+        return 320;
+    }
+
+    function playHorizontalRuleMotion(element, animations, keyframes, toRenderedRule) {
+        if (!element || typeof element.animate !== "function")
+            return;
+        var reduceMotion = typeof window.matchMedia === "function"
+            && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var animation = animations.get(element);
+        if (reduceMotion) {
+            if (animation)
+                animation.cancel();
+            animations.delete(element);
+            return;
+        }
+
+        var duration = getHorizontalRuleMotionDuration(element);
+        if (!animation) {
+            animation = element.animate(keyframes, {
+                duration: duration,
+                easing: "linear",
+                fill: "both",
+            });
+            animation.pause();
+            animation.currentTime = toRenderedRule ? 0 : duration;
+            animations.set(element, animation);
+        }
+
+        animation.playbackRate = toRenderedRule ? 1 : -1;
+        animation.play();
+    }
+
+    function syncHorizontalRuleMotion(pre, toRenderedRule, stateChanged) {
+        if (!pre.classList.contains("HyperMD-hr"))
+            return;
+
+        var text = pre.firstElementChild;
+        var background = pre.parentElement && pre.parentElement.querySelector(".HyperMD-hr-bg");
+        if (background)
+            background.classList.toggle("mdtk-hr-rendered", toRenderedRule);
+
+        var wasReady = pre.dataset.mdtkHrMotionReady === "true";
+        pre.dataset.mdtkHrMotionReady = "true";
+        // A freshly rendered CodeMirror line should appear in its settled state.
+        // Only user-driven state changes animate.
+        if (!wasReady || !stateChanged)
+            return;
+
+        playHorizontalRuleMotion(text, hrTextAnimations, hrTextKeyframes, toRenderedRule);
+        playHorizontalRuleMotion(background, hrRuleAnimations, hrRuleKeyframes, toRenderedRule);
+    }
+
     var HideToken = /** @class */ (function () {
         function HideToken(cm) {
             var _this = this;
@@ -173,15 +244,22 @@
             var map = mapInfo.map;
             var nodeCount = map.length / 3;
             var changed = false;
+            var lineStateChanged = false;
+            var toInactiveLine = rangesInLine.length === 0;
             // change line status
-            if (rangesInLine.length === 0) { // inactiveLine
-                if (addClass(pre, lineInactiveClassName))
+            if (toInactiveLine) { // inactiveLine
+                if (addClass(pre, lineInactiveClassName)) {
                     changed = true;
+                    lineStateChanged = true;
+                }
             }
             else { // activeLine
-                if (rmClass(pre, lineInactiveClassName))
+                if (rmClass(pre, lineInactiveClassName)) {
                     changed = true;
+                    lineStateChanged = true;
+                }
             }
+            syncHorizontalRuleMotion(pre, toInactiveLine, lineStateChanged);
             // show or hide tokens
             /**
              * @returns if there are Span Nodes changed

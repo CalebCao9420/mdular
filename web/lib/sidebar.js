@@ -650,6 +650,23 @@ function TreeView(root, container, options) {
     var draggedNode = null;
     var draggedElement = null;
     var dropIndicator = null;
+    var branchSpringAnimations = new WeakMap();
+    var iconSpringAnimations = new WeakMap();
+
+    const branchSpringKeyframes = [
+        {offset: 0, opacity: 0.35, transform: 'translateY(-8px) scaleY(0.92)'},
+        {offset: 0.62, opacity: 1, transform: 'translateY(2.5px) scaleY(1.035)'},
+        {offset: 0.78, opacity: 1, transform: 'translateY(-1.2px) scaleY(0.986)'},
+        {offset: 0.91, opacity: 1, transform: 'translateY(0.45px) scaleY(1.006)'},
+        {offset: 1, opacity: 1, transform: 'translateY(0) scaleY(1)'},
+    ];
+    const iconSpringKeyframes = [
+        {offset: 0, transform: 'scale(0.82) rotate(-7deg)'},
+        {offset: 0.62, transform: 'scale(1.12) rotate(3deg)'},
+        {offset: 0.78, transform: 'scale(0.96) rotate(-1.5deg)'},
+        {offset: 0.91, transform: 'scale(1.025) rotate(0.5deg)'},
+        {offset: 1, transform: 'scale(1) rotate(0)'},
+    ];
 
     if (typeof root === "undefined") {
         throw new Error("Parameter 1 must be set (root)");
@@ -701,6 +718,128 @@ function TreeView(root, container, options) {
         if (y < height * 0.25) return 'before';
         if (y > height * 0.75) return 'after';
         return 'inside';
+    }
+
+    function getParentIcons(node) {
+        if (node.toString() === 'journal') {
+            return {
+                closed: TreeConfig.journal_icon,
+                open: TreeConfig.journal_icon_filled,
+            };
+        }
+
+        if (node.toString().startsWith('_') && node.toString().endsWith('_')) {
+            return {
+                closed: TreeConfig.checklists_icon,
+                open: TreeConfig.open_icon,
+            };
+        }
+
+        if (node.toString() === 'today' || node.toString() === 'later') {
+            return {
+                closed: TreeConfig.later_icon,
+                open: TreeConfig.open_icon,
+            };
+        }
+
+        return {
+            closed: TreeConfig.close_icon,
+            open: TreeConfig.open_icon,
+        };
+    }
+
+    function getParentIconMarkup(node) {
+        const icons = getParentIcons(node);
+        return '<span class="tree-mod_icon tree-parent_icon" aria-hidden="true">'
+            + '<span class="tree-parent_icon-layer tree-parent_icon-closed">' + icons.closed + '</span>'
+            + '<span class="tree-parent_icon-layer tree-parent_icon-open">' + icons.open + '</span>'
+            + '</span>';
+    }
+
+    function populateBranch(node, branch) {
+        if (branch.dataset.rendered === 'true') {
+            return;
+        }
+
+        const branchInner = branch.firstElementChild;
+        const branchList = branchInner && branchInner.firstElementChild;
+        if (!branchList) {
+            return;
+        }
+
+        const children = document.createDocumentFragment();
+        node.getChildren().forEach(function (child) {
+            children.appendChild(renderNode(child));
+        });
+        branchList.appendChild(children);
+        branch.dataset.rendered = 'true';
+    }
+
+    function getMotionDuration(element) {
+        const raw = getComputedStyle(element).getPropertyValue('--tree-motion').trim();
+        if (raw.endsWith('ms')) {
+            return Number.parseFloat(raw) || 320;
+        }
+        if (raw.endsWith('s')) {
+            return (Number.parseFloat(raw) || 0.32) * 1000;
+        }
+        return 320;
+    }
+
+    function playReversibleSpring(element, animations, keyframes, forwards) {
+        if (!element || typeof element.animate !== 'function') {
+            return;
+        }
+
+        const reduceMotion = typeof window.matchMedia === 'function'
+            && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const existing = animations.get(element);
+        if (reduceMotion) {
+            if (existing) existing.cancel();
+            animations.delete(element);
+            return;
+        }
+
+        const duration = getMotionDuration(element);
+        let animation = existing;
+        if (!animation) {
+            animation = element.animate(keyframes, {
+                duration,
+                easing: 'linear',
+                fill: 'both',
+            });
+            animation.pause();
+            animation.currentTime = forwards ? 0 : duration;
+            animations.set(element, animation);
+        }
+
+        animation.playbackRate = forwards ? 1 : -1;
+        animation.play();
+    }
+
+    function syncBranchState(node, item, listItem) {
+        const expanded = node.isExpanded();
+        const branch = listItem.querySelector(':scope > .tree-branch');
+
+        item.classList.toggle('expanded', expanded);
+        item.setAttribute('aria-expanded', String(expanded));
+
+        if (!branch) {
+            return;
+        }
+
+        if (expanded) {
+            populateBranch(node, branch);
+        }
+
+        branch.classList.toggle('is-expanded', expanded);
+        branch.classList.toggle('is-collapsed', !expanded);
+        branch.setAttribute('aria-hidden', String(!expanded));
+
+        const branchInner = branch.firstElementChild;
+        const icon = item.querySelector('.tree-parent_icon');
+        playReversibleSpring(branchInner, branchSpringAnimations, branchSpringKeyframes, expanded);
+        playReversibleSpring(icon, iconSpringAnimations, iconSpringKeyframes, expanded);
     }
 
     this.setRoot = function (_root) {
@@ -1030,7 +1169,7 @@ function TreeView(root, container, options) {
                 if (e.ctrlKey == false) {
                     if (!node_cur.isLeaf()) {
                         node_cur.toggleExpanded();
-                        self.reload();
+                        syncBranchState(node_cur, span_desc, li_outer);
                         node_cur.on("click")(e, node_cur);
                         return;
                     } else {
@@ -1113,21 +1252,7 @@ function TreeView(root, container, options) {
 
             li_outer.appendChild(span_desc);
         } else {
-            var ret = '';
-            if (node.toString() === 'journal') {
-                const heart = node.isExpanded() ? TreeConfig.journal_icon_filled : TreeConfig.journal_icon;
-                ret += '<span class="tree-mod_icon">' + heart + '</span>';
-            } else if (node.isExpanded()) {
-                ret += '<span class="tree-mod_icon">' + TreeConfig.open_icon + '</span>';
-            } else {
-                if (node.toString().startsWith('_') && node.toString().endsWith('_')) {
-                    ret += '<span class="tree-mod_icon">' + TreeConfig.checklists_icon + '</span>';
-                } else if (node.toString() === 'today' || node.toString() === 'later') {
-                    ret += '<span class="tree-mod_icon">' + TreeConfig.later_icon + '</span>';
-                } else {
-                    ret += '<span class="tree-mod_icon">' + TreeConfig.close_icon + '</span>';
-                }
-            }
+            var ret = getParentIconMarkup(node);
 
             var icon = TreeUtil.getProperty(node.getOptions(), "icon", "");
             icon = '';
@@ -1140,17 +1265,22 @@ function TreeView(root, container, options) {
             }
 
             span_desc.innerHTML = ret + node.toString() + '</span>';
+            span_desc.setAttribute('aria-expanded', String(node.isExpanded()));
 
             li_outer.appendChild(span_desc);
 
+            var branch = document.createElement('div');
+            branch.className = 'tree-branch ' + (node.isExpanded() ? 'is-expanded' : 'is-collapsed');
+            branch.setAttribute('aria-hidden', String(!node.isExpanded()));
+
+            var branchInner = document.createElement('div');
+            branchInner.className = 'tree-branch-inner';
+            branchInner.appendChild(document.createElement('ul'));
+            branch.appendChild(branchInner);
+            li_outer.appendChild(branch);
+
             if (node.isExpanded()) {
-                var ul_container = document.createElement("ul");
-
-                node.getChildren().forEach(function (child) {
-                    ul_container.appendChild(renderNode(child));
-                });
-
-                li_outer.appendChild(ul_container)
+                populateBranch(node, branch);
             }
         }
 

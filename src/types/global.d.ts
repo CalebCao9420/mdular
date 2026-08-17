@@ -162,9 +162,8 @@ declare function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Pr
 declare function isTauriWorkspaceBound(): boolean;
 declare function setTauriWorkspaceBound(bound: boolean): void;
 declare function relativeToAppPath(relative: string): string;
-declare class TauriFileHandle {
+interface TauriFileHandle {
   relativePath: string;
-  constructor(relativePath: string);
   getFile(): Promise<File>;
   createWritable(options?: { keepExistingData?: boolean }): Promise<{
     write(data: string | Blob | ArrayBuffer | Uint8Array): Promise<void>;
@@ -249,7 +248,6 @@ declare function removeFrontmatterField(content: string, key: string): string;
 declare function buildTaskFrontmatter(title: string, statusId: string): string;
 declare function refreshChatArchiveUi(): void;
 
-declare const KANBAN_DEFAULT_STATUS_CONFIG: TicketStatusConfig;
 declare function buildKanbanDefaultBoardConfig(): BoardColumnConfig;
 declare function getKanbanTicketStatusesSeedJson(): string;
 declare function getKanbanBoardSeedJson(): string;

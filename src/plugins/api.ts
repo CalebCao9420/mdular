@@ -151,12 +151,15 @@ function handlePluginKeyboard(event: KeyboardEvent): boolean {
   return false;
 }
 
-function normalizePluginIds(plugins: unknown): string[] {
+function normalizeEnabledPluginIds(plugins: unknown): string[] {
   if (!Array.isArray(plugins)) {
     return [];
   }
   return plugins
-    .filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+    .filter(
+      (id): id is string =>
+        typeof id === 'string' && /^[a-z0-9][a-z0-9_-]*$/i.test(id.trim())
+    )
     .map((id) => id.trim());
 }
 
@@ -164,14 +167,15 @@ async function resolvePluginIds(): Promise<string[]> {
   if (typeof getLauncherPlugins === 'function') {
     const fromLauncher = getLauncherPlugins();
     if (fromLauncher.length > 0) {
-      log('Plugins from launcher (.mdtk/config.json on disk):', fromLauncher.join(', '));
-      return fromLauncher;
+      const normalizedLauncherIds = normalizeEnabledPluginIds(fromLauncher);
+      log('Plugins from launcher (.mdtk/config.json on disk):', normalizedLauncherIds.join(', '));
+      return normalizedLauncherIds;
     }
   }
 
   if (typeof loadMdtkWorkspaceConfig === 'function') {
     const cfg = await loadMdtkWorkspaceConfig(true);
-    const fromWorkspace = normalizePluginIds(cfg.plugins);
+    const fromWorkspace = normalizeEnabledPluginIds(cfg.plugins);
     if (fromWorkspace.length > 0) {
       log('Plugins from workspace .mdtk/config.json:', fromWorkspace.join(', '));
       return fromWorkspace;
@@ -199,7 +203,10 @@ async function loadPluginScriptList(id: string): Promise<string[]> {
       const files = await response.json();
       if (Array.isArray(files) && files.length > 0) {
         return files
-          .filter((file): file is string => typeof file === 'string' && file.trim().length > 0)
+          .filter(
+            (file): file is string =>
+              typeof file === 'string' && /^[a-z0-9][a-z0-9_.-]*\.js$/i.test(file.trim())
+          )
           .map((file) => `plugins/${id}/${file.trim()}`);
       }
     }

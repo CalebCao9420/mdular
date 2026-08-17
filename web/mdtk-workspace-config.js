@@ -2,11 +2,13 @@
 
 const MDTK_CONFIG_PATH = "/.mdtk/config.json";
 let cachedMdtkConfig = null;
-function normalizePluginIds(plugins) {
+function normalizeWorkspacePluginIds(plugins) {
   if (!Array.isArray(plugins)) {
     return [];
   }
-  return plugins.filter((id) => typeof id === "string" && id.trim().length > 0).map((id) => id.trim());
+  return plugins.filter(
+    (id) => typeof id === "string" && /^[a-z0-9][a-z0-9_-]*$/i.test(id.trim())
+  ).map((id) => id.trim());
 }
 async function loadMdtkWorkspaceConfig(forceReload = false) {
   if (cachedMdtkConfig && !forceReload) {
@@ -17,7 +19,7 @@ async function loadMdtkWorkspaceConfig(forceReload = false) {
     const parsed = JSON.parse(text);
     cachedMdtkConfig = parsed && typeof parsed === "object" ? parsed : {};
     if (cachedMdtkConfig.plugins) {
-      cachedMdtkConfig.plugins = normalizePluginIds(cachedMdtkConfig.plugins);
+      cachedMdtkConfig.plugins = normalizeWorkspacePluginIds(cachedMdtkConfig.plugins);
     }
   } catch (err) {
     cachedMdtkConfig = {};

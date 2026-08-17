@@ -1,2 +1,2 @@
 // Generated from src/ — edit TypeScript and run: npm run build
-window.COMMIT_HASH='?v=1784728546776';
+window.COMMIT_HASH='?v=1786636502608';

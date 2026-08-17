@@ -256,14 +256,9 @@ async function applyWorkspaceDirectory(dirHandle) {
   while (isLoadingLocalFiles) {
     await new Promise((r) => setTimeout(r, 50));
   }
-  isLoadingLocalFiles = true;
-  try {
-    await saveDirectoryHandle(dirHandle);
-    await write("/Help.md", getToolkitHelpIntro() + getHelpContent());
-    files = await loadLocalFiles(dirHandle);
-  } finally {
-    isLoadingLocalFiles = false;
-  }
+  await saveDirectoryHandle(dirHandle);
+  await write("/Help.md", getToolkitHelpIntro() + getHelpContent());
+  files = await loadLocalFiles(dirHandle);
   isMemFS = false;
   document.getElementById("open-folder").style.display = "none";
   const openFolderBtn = document.getElementById("open-folder-btn");
@@ -330,6 +325,9 @@ function normNewLines(text) {
 }
 function showToast(msg, ms = 1500) {
   const toast = document.createElement("div");
+  toast.className = "mdtk-toast";
+  toast.setAttribute("role", "status");
+  toast.setAttribute("aria-live", "polite");
   if (msg instanceof Node) {
     toast.appendChild(msg);
   } else {
@@ -338,12 +336,8 @@ function showToast(msg, ms = 1500) {
   const editorContainer = document.getElementById("editor-container");
   const rect = editorContainer ? editorContainer.getBoundingClientRect() : null;
   const centerX = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
-  toast.style.cssText = `
-        position: fixed; top: 8px; left: ${centerX}px; transform: translateX(-50%);
-        background: var(--col-bg-alt); color: var(--col-tx); padding: 8px 16px; border-radius: 5px;
-        border: 1px solid var(--col-border);
-        z-index: 9999; font-size: 14px;
-    `;
+  toast.style.left = `${centerX}px`;
+  toast.style.setProperty("--mdtk-toast-duration", `${Math.max(ms, 300)}ms`);
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), ms);
 }
@@ -364,7 +358,13 @@ async function saveDirectoryHandle(directoryHandle) {
   const db = await initDB();
   const transaction = db.transaction("handles", "readwrite");
   const store = transaction.objectStore("handles");
-  await store.put(directoryHandle, "savedDirectoryHandle");
+  return new Promise((resolve, reject) => {
+    const request = store.put(directoryHandle, "savedDirectoryHandle");
+    request.onerror = () => reject(request.error);
+    transaction.oncomplete = () => resolve(void 0);
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error || new Error("Saving directory handle was aborted"));
+  });
 }
 async function getSavedRootDirHandle() {
   const db = await initDB();
@@ -473,16 +473,78 @@ function trimPrefix(str, prefix) {
 function getCurrentVersion() {
   return window.COMMIT_HASH ? window.COMMIT_HASH.replace("?v=", "") : "";
 }
+const EDITOR2_MOTION_DURATION = 320;
+const EDITOR2_MOTION_EASING = "cubic-bezier(0.22, 0.78, 0.24, 1)";
+let editor2Motion = null;
+let editor2MotionTarget = "hidden";
+function prefersReducedMotion() {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+}
+function finishEditor2Motion(editor2Container, shown) {
+  editor2Motion?.cancel();
+  editor2Motion = null;
+  editor2Container.classList.remove("is-animating");
+  if (shown) {
+    editor2Container.classList.add("show");
+    editor2Container.style.display = "flex";
+    editor2Container.setAttribute("aria-hidden", "false");
+    return;
+  }
+  editor2Container.classList.remove("show");
+  editor2Container.style.display = "none";
+  editor2Container.setAttribute("aria-hidden", "true");
+  if (typeof fitEditorLayout === "function") {
+    fitEditorLayout(editor);
+  } else {
+    editor.refresh();
+  }
+}
+function setEditor2Visible(editor2Container, shown) {
+  editor2MotionTarget = shown ? "shown" : "hidden";
+  editor2Container.classList.toggle("show", shown);
+  editor2Container.setAttribute("aria-hidden", shown ? "false" : "true");
+  if (prefersReducedMotion() || typeof editor2Container.animate !== "function") {
+    finishEditor2Motion(editor2Container, shown);
+    return;
+  }
+  editor2Container.classList.add("is-animating");
+  if (editor2Motion && editor2Motion.playState !== "finished") {
+    const desiredRate = shown ? 1 : -1;
+    if (Math.sign(editor2Motion.playbackRate) !== desiredRate) {
+      editor2Motion.updatePlaybackRate(desiredRate);
+    }
+    editor2Motion.play();
+    return;
+  }
+  editor2Motion?.cancel();
+  editor2Motion = editor2Container.animate([
+    { opacity: 0, transform: "translateX(24px) scale(0.992)" },
+    { opacity: 1, transform: "translateX(0) scale(1)" }
+  ], {
+    duration: EDITOR2_MOTION_DURATION,
+    easing: EDITOR2_MOTION_EASING,
+    fill: "both"
+  });
+  if (!shown) {
+    editor2Motion.pause();
+    editor2Motion.currentTime = EDITOR2_MOTION_DURATION;
+    editor2Motion.updatePlaybackRate(-1);
+    editor2Motion.play();
+  }
+  editor2Motion.onfinish = () => {
+    const arrivedShown = editor2MotionTarget === "shown";
+    finishEditor2Motion(editor2Container, arrivedShown);
+  };
+}
 function showEditor2() {
   const editor2Container = document.getElementById("editor2-container");
-  const alreadyShown = editor2Container.classList.contains("show") && editor2Container.style.display !== "none";
+  const alreadyShown = editor2MotionTarget === "shown" && editor2Container.style.display !== "none";
   if (alreadyShown) {
     return;
   }
   rememberEditorPos();
   editor2Container.style.display = "flex";
-  editor2Container.offsetHeight;
-  editor2Container.classList.add("show");
+  setEditor2Visible(editor2Container, true);
   if (typeof fitEditorLayout === "function") {
     fitEditorLayout(editor);
     fitEditorLayout(editor2);
@@ -497,19 +559,13 @@ function hideEditor2() {
     return;
   }
   const editor2Container = document.getElementById("editor2-container");
-  editor2Container.classList.remove("show");
+  if (editor2Container.style.display !== "none" || editor2Container.classList.contains("show")) {
+    setEditor2Visible(editor2Container, false);
+  }
   restoreEditorPos();
   editor2.path = void 0;
   currentEditor = editor;
   selectSidebarItem(editor.path);
-  setTimeout(() => {
-    editor2Container.style.display = "none";
-    if (typeof fitEditorLayout === "function") {
-      fitEditorLayout(editor);
-    } else {
-      editor.refresh();
-    }
-  }, 300);
 }
 function isChrome() {
   var winNav = window.navigator;

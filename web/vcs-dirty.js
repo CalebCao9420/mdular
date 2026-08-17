@@ -1,9 +1,13 @@
 // Generated from src/ — edit TypeScript and run: npm run build
 
 const dirtyPaths = /* @__PURE__ */ new Set();
+const dirtyEditorHooks = /* @__PURE__ */ new WeakSet();
 let vcsStatusEl = null;
 function markPathDirty(path) {
   if (!path || path.startsWith("/??")) {
+    return;
+  }
+  if (dirtyPaths.has(path)) {
     return;
   }
   dirtyPaths.add(path);
@@ -14,7 +18,9 @@ function markPathClean(path) {
   if (!path) {
     return;
   }
-  dirtyPaths.delete(path);
+  if (!dirtyPaths.delete(path)) {
+    return;
+  }
   updateVcsStatusUI();
   renderSidebar("", dirtyPaths.size ? Array.from(dirtyPaths) : void 0);
 }
@@ -66,6 +72,11 @@ function syncDirtyFromEditor() {
   }
 }
 function hookEditorDirty(cm) {
+  const editorKey = cm;
+  if (dirtyEditorHooks.has(editorKey)) {
+    return;
+  }
+  dirtyEditorHooks.add(editorKey);
   cm.on("change", () => {
     syncDirtyFromEditor();
   });

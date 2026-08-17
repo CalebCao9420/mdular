@@ -5,6 +5,148 @@
         return;
     }
     let fold = window.HyperMD.Fold;
+    let activeImagePreview = null;
+
+    const IMAGE_PREVIEW_MOTION_DURATION = 320;
+    const IMAGE_PREVIEW_MOTION_EASING = "cubic-bezier(0.22, 0.78, 0.24, 1)";
+
+    function prefersReducedMotion() {
+        return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    }
+
+    function sourceToPreviewTransform(sourceRect, previewRect) {
+        if (!sourceRect.width || !sourceRect.height || !previewRect.width || !previewRect.height) {
+            return "scale(0.86)";
+        }
+
+        const sourceX = sourceRect.left + sourceRect.width / 2;
+        const sourceY = sourceRect.top + sourceRect.height / 2;
+        const previewX = previewRect.left + previewRect.width / 2;
+        const previewY = previewRect.top + previewRect.height / 2;
+        const scale = Math.max(0.04, Math.min(
+            1,
+            sourceRect.width / previewRect.width,
+            sourceRect.height / previewRect.height,
+        ));
+
+        return `translate(${sourceX - previewX}px, ${sourceY - previewY}px) scale(${scale})`;
+    }
+
+    /**
+     * A shared-element preview: the full-size image starts at the inline image's
+     * exact screen position, and closing reverses the same animation objects.
+     */
+    function openImagePreview(source, cm) {
+        activeImagePreview?.close(true);
+
+        const sourceRect = source.getBoundingClientRect();
+        const sourceRadius = window.getComputedStyle(source).borderRadius || "0px";
+        const modal = document.createElement("div");
+        modal.className = "hmd-image-preview-modal";
+        modal.tabIndex = -1;
+        modal.setAttribute("role", "dialog");
+        modal.setAttribute("aria-modal", "true");
+        modal.setAttribute("aria-label", "Image preview. Click or press Escape to close.");
+
+        const imgPreview = document.createElement("img");
+        imgPreview.src = source.src;
+        imgPreview.alt = source.alt || source.title || "";
+        imgPreview.className = "hmd-image-preview";
+        imgPreview.style.visibility = "hidden";
+        imgPreview.draggable = false;
+        modal.appendChild(imgPreview);
+
+        let animations = [];
+        let closing = false;
+        let cleaned = false;
+
+        const cleanup = () => {
+            if (cleaned) {
+                return;
+            }
+            cleaned = true;
+            document.removeEventListener("keydown", handleKeyDown, true);
+            animations.forEach((animation) => animation.cancel());
+            modal.remove();
+            if (activeImagePreview?.modal === modal) {
+                activeImagePreview = null;
+            }
+            cm?.focus();
+        };
+
+        const closeModal = (immediate = false) => {
+            if (closing) {
+                return;
+            }
+            closing = true;
+            document.removeEventListener("keydown", handleKeyDown, true);
+
+            if (immediate || prefersReducedMotion() || animations.length === 0) {
+                cleanup();
+                return;
+            }
+
+            const closingAnimations = animations.map((animation) => {
+                animation.updatePlaybackRate(-Math.abs(animation.playbackRate || 1));
+                animation.play();
+                return animation.finished.catch(() => undefined);
+            });
+            Promise.all(closingAnimations).then(cleanup);
+        };
+
+        const handleKeyDown = (event) => {
+            if (event.key !== "Escape") {
+                return;
+            }
+            event.stopPropagation();
+            event.preventDefault();
+            closeModal();
+        };
+
+        const startMotion = () => {
+            if (closing || cleaned || !modal.isConnected) {
+                return;
+            }
+
+            imgPreview.style.visibility = "visible";
+            if (prefersReducedMotion() || typeof modal.animate !== "function") {
+                return;
+            }
+
+            const previewRect = imgPreview.getBoundingClientRect();
+            const startTransform = sourceToPreviewTransform(sourceRect, previewRect);
+            const previewRadius = window.getComputedStyle(imgPreview).borderRadius || "12px";
+            const options = {
+                duration: IMAGE_PREVIEW_MOTION_DURATION,
+                easing: IMAGE_PREVIEW_MOTION_EASING,
+                fill: "both",
+            };
+
+            animations = [
+                modal.animate([
+                    { opacity: 0 },
+                    { opacity: 1 },
+                ], options),
+                imgPreview.animate([
+                    { opacity: 0.36, transform: startTransform, borderRadius: sourceRadius },
+                    { opacity: 1, transform: "translate(0, 0) scale(1)", borderRadius: previewRadius },
+                ], options),
+            ];
+        };
+
+        modal.addEventListener("click", () => closeModal());
+        document.addEventListener("keydown", handleKeyDown, true);
+        document.body.appendChild(modal);
+        activeImagePreview = { modal, close: closeModal };
+        modal.focus({preventScroll: true});
+
+        if (imgPreview.complete) {
+            requestAnimationFrame(startMotion);
+        } else {
+            imgPreview.addEventListener("load", () => requestAnimationFrame(startMotion), {once: true});
+            imgPreview.addEventListener("error", () => requestAnimationFrame(startMotion), {once: true});
+        }
+    }
 
     function ImageFolder(stream, token) {
         let cm = stream.cm;
@@ -101,44 +243,7 @@
                 if (!isVideo && !isAudio) {
                     media.addEventListener('click', function (e) {
                         e.stopPropagation();
-                        let modal = document.createElement("div");
-                        modal.style.position = "fixed";
-                        modal.style.top = "0";
-                        modal.style.left = "0";
-                        modal.style.width = "100vw";
-                        modal.style.height = "100vh";
-                        modal.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
-                        modal.style.display = "flex";
-                        modal.style.justifyContent = "center";
-                        modal.style.alignItems = "center";
-                        modal.style.zIndex = "1000";
-
-                        let imgPreview = document.createElement("img");
-                        imgPreview.src = media.src;
-                        imgPreview.className = "hmd-image-preview";
-                        imgPreview.style.maxWidth = "90%";
-                        imgPreview.style.maxHeight = "90%";
-                        imgPreview.style.borderRadius = "8px";
-
-                        modal.appendChild(imgPreview);
-
-                        const closeModal = () => {
-                            document.body.removeChild(modal);
-                            document.removeEventListener("keydown", handleKeyDown, true);
-                        };
-
-                        modal.addEventListener("click", closeModal,);
-                        const handleKeyDown = (event) => {
-                            if (event.key === "Escape") {
-                                event.stopPropagation();
-                                event.preventDefault();
-                                closeModal();
-                                currentEditor.focus();
-                            }
-                        };
-                        document.addEventListener("keydown", handleKeyDown, true);
-
-                        document.body.appendChild(modal);
+                        openImagePreview(media, cm);
                     }, false);
                 }
                 const readyEvent = (isVideo || isAudio) ? 'loadedmetadata' : 'load';
@@ -229,44 +334,7 @@
                 });
                 img.addEventListener('click', function (e) {
                     e.stopPropagation();
-                    let modal = document.createElement("div");
-                    modal.style.position = "fixed";
-                    modal.style.top = "0";
-                    modal.style.left = "0";
-                    modal.style.width = "100vw";
-                    modal.style.height = "100vh";
-                    modal.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
-                    modal.style.display = "flex";
-                    modal.style.justifyContent = "center";
-                    modal.style.alignItems = "center";
-                    modal.style.zIndex = "1000";
-
-                    let imgPreview = document.createElement("img");
-                    imgPreview.src = img.src;
-                    imgPreview.className = "hmd-image-preview";
-                    imgPreview.style.maxWidth = "90%";
-                    imgPreview.style.maxHeight = "90%";
-                    imgPreview.style.borderRadius = "8px";
-
-                    modal.appendChild(imgPreview);
-
-                    const closeModal = () => {
-                        document.body.removeChild(modal);
-                        document.removeEventListener("keydown", handleKeyDown, true);
-                    };
-
-                    modal.addEventListener("click", closeModal,);
-                    const handleKeyDown = (event) => {
-                        if (event.key === "Escape") {
-                            event.stopPropagation();
-                            event.preventDefault();
-                            closeModal();
-                            currentEditor.focus();
-                        }
-                    };
-                    document.addEventListener("keydown", handleKeyDown, true);
-
-                    document.body.appendChild(modal);
+                    openImagePreview(img, cm);
                 }, false);
                 img.addEventListener('load', function () {
                     img.classList.remove("hmd-image-loading");

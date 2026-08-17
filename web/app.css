@@ -181,14 +181,22 @@ body {
     height: auto;
     background: var(--col-bg);
     z-index: 10;
-    transform: translateX(100%);
-    transition: transform 0.3s ease;
+    opacity: 0;
+    transform: translateX(24px) scale(0.992);
+    transform-origin: right center;
+    pointer-events: none;
     overflow: hidden;
 }
 
 #editor2-container.show {
     display: flex;
-    transform: translateX(0);
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    pointer-events: auto;
+}
+
+#editor2-container.is-animating {
+    will-change: opacity, transform;
 }
 
 /* Original (disabled): when the sidebar was hidden and editor2 was open,
@@ -323,7 +331,7 @@ a:hover {
    ideal left padding would go negative - in that case content snaps
    to the editor1 container's left edge, but its width still equals
    --normal-width so no re-flow happens. */
-#content:has(#editor2-container.show) .CodeMirror-scroll {
+#content:has(#editor2-container.show) #editor-container > .CodeMirror .CodeMirror-scroll {
     padding-top: 2em;
     padding-bottom: 2em;
     padding-left: max(1em, calc((100% - var(--normal-width)) / 2 - 25vw));
@@ -679,8 +687,35 @@ body.dragging * {
     color: var(--col-tx-alt) !important;
 }
 
+.hmd-image-preview-modal {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    width: 100vw;
+    height: 100vh;
+    padding: 5vh 5vw;
+    box-sizing: border-box;
+    overflow: hidden;
+    border: 0;
+    outline: 0;
+    background: rgba(8, 12, 10, 0.82);
+    cursor: zoom-out;
+    z-index: 1000;
+}
+
 .hmd-image-preview {
-    border: var(--col-border);
+    display: block;
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border: 1px solid var(--col-border);
+    border-radius: var(--mdtk-radius-md, 12px);
+    box-shadow: 0 24px 72px rgba(0, 0, 0, 0.32);
+    cursor: zoom-out;
+    transform-origin: center center;
+    -webkit-user-drag: none;
+    user-select: none;
 }
 
 .cm-s-hypermd-light .HyperMD-codeblock::before {

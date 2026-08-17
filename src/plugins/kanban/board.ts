@@ -809,7 +809,7 @@ function createStatusSection(status: TicketStatusDef | null, cards: TaskCard[]):
   const header = document.createElement('button');
   header.type = 'button';
   header.className = 'ticket-status-header';
-  header.innerHTML = `<span class="ticket-status-label">${label}</span><span class="ticket-status-count">${cards.length}</span>`;
+  header.innerHTML = `<span class="ticket-status-label">${escapeHtml(label)}</span><span class="ticket-status-count">${cards.length}</span>`;
   header.addEventListener('click', () => {
     section.classList.toggle('collapsed');
   });

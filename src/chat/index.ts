@@ -370,9 +370,12 @@ function scrollToBottom() {
 }
 
 function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 function autoResize() {
@@ -501,8 +504,14 @@ async function moveFromChat(text, callback) {
     await callback(text);
 
     const { messages } = await parseMessagesFromChat();
-    const filteredMessages = messages.filter(msg => msg.text !== text);
-    await saveMessagesToChat(filteredMessages);
+    const messageIndex = messages.findIndex(msg => msg.text === text);
+    if (messageIndex === -1) {
+        throw new Error('Chat message changed before it could be archived');
+    }
+    // Remove one occurrence only. Filtering by text deleted every duplicate
+    // message when a single item was archived.
+    messages.splice(messageIndex, 1);
+    await saveMessagesToChat(messages);
 }
 
 function getChatActionMessages(btn) {
@@ -768,16 +777,7 @@ function attachEventListeners() {
     chat.querySelectorAll('.to-checklist-btn').forEach(btn => {
         btn.addEventListener('click', async function (e) {
             e.stopPropagation();
-            const selectedMessages = document.querySelectorAll('.message.selected');
-            let msgs = [];
-            let messagesToRemove = [];
-            if (selectedMessages.length > 0) {
-                msgs = Array.from(selectedMessages).map(msg => msg.querySelector('.message').textContent);
-                messagesToRemove = selectedMessages;
-            } else {
-                msgs = [btn.closest('.message').dataset.text];
-                messagesToRemove = [btn.closest('.message')];
-            }
+            const { msgs, messagesToRemove } = getChatActionMessages(btn);
 
 
             (async () => {
@@ -937,18 +937,23 @@ async function renderMessages() {
     }
 
     const recentFiles = getRecentlyModifiedFiles(RECENT_FILES);
-    const recentFilesButtons = recentFiles.map(filename => `
+    const recentFilesButtons = recentFiles.map(filename => {
+        const filenameWithoutExtension = filename.replace(/\.md$/, '');
+        const shortFilename = filenameWithoutExtension.slice(0, 10)
+            + (filenameWithoutExtension.length > 10 ? '\u2026' : '');
+        return `
     <div class="btn-wrapper">
-       <button class="action-btn to-recent-btn" data-filename="${filename}">
-           ${filename.replace(/\.md$/, '').slice(0, 10)}${filename.replace(/\.md$/, '').length > 10 ? '\u2026' : ''}
+       <button class="action-btn to-recent-btn" data-filename="${escapeHtml(filename)}">
+           ${escapeHtml(shortFilename)}
        </button>
-       <span class="btn-label">To ${filename.replace(/\.md$/, '')}</span>
+       <span class="btn-label">To ${escapeHtml(filenameWithoutExtension)}</span>
     </div>
-    `).join('');
+    `;
+    }).join('');
 
     // add own class every other message
     chat.innerHTML = messages.map((message, i) => `
-        <div class="message ${i % 2 === 1 ? 'own' : ''}${message.done ? ' completed' : ''}" data-text="${escapeHtml(message.text)}" data-timestamp="${message.timestamp}">
+        <div class="message ${i % 2 === 1 ? 'own' : ''}${message.done ? ' completed' : ''}" data-index="${message.index}" data-text="${escapeHtml(message.text)}" data-timestamp="${message.timestamp}">
             <button class="complete-btn" title="Mark as done">
                 <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.5 17l6 6 13-13"/>

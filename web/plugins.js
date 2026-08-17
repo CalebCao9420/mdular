@@ -94,23 +94,26 @@ function handlePluginKeyboard(event) {
   }
   return false;
 }
-function normalizePluginIds(plugins) {
+function normalizeEnabledPluginIds(plugins) {
   if (!Array.isArray(plugins)) {
     return [];
   }
-  return plugins.filter((id) => typeof id === "string" && id.trim().length > 0).map((id) => id.trim());
+  return plugins.filter(
+    (id) => typeof id === "string" && /^[a-z0-9][a-z0-9_-]*$/i.test(id.trim())
+  ).map((id) => id.trim());
 }
 async function resolvePluginIds() {
   if (typeof getLauncherPlugins === "function") {
     const fromLauncher = getLauncherPlugins();
     if (fromLauncher.length > 0) {
-      log("Plugins from launcher (.mdtk/config.json on disk):", fromLauncher.join(", "));
-      return fromLauncher;
+      const normalizedLauncherIds = normalizeEnabledPluginIds(fromLauncher);
+      log("Plugins from launcher (.mdtk/config.json on disk):", normalizedLauncherIds.join(", "));
+      return normalizedLauncherIds;
     }
   }
   if (typeof loadMdtkWorkspaceConfig === "function") {
     const cfg = await loadMdtkWorkspaceConfig(true);
-    const fromWorkspace = normalizePluginIds(cfg.plugins);
+    const fromWorkspace = normalizeEnabledPluginIds(cfg.plugins);
     if (fromWorkspace.length > 0) {
       log("Plugins from workspace .mdtk/config.json:", fromWorkspace.join(", "));
       return fromWorkspace;
@@ -134,7 +137,9 @@ async function loadPluginScriptList(id) {
     if (response.ok) {
       const files = await response.json();
       if (Array.isArray(files) && files.length > 0) {
-        return files.filter((file) => typeof file === "string" && file.trim().length > 0).map((file) => `plugins/${id}/${file.trim()}`);
+        return files.filter(
+          (file) => typeof file === "string" && /^[a-z0-9][a-z0-9_.-]*\.js$/i.test(file.trim())
+        ).map((file) => `plugins/${id}/${file.trim()}`);
       }
     }
   } catch {

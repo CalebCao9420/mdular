@@ -6,6 +6,8 @@
     "build": "node scripts/build.mjs",
     "watch": "node scripts/build.mjs --watch",
     "typecheck": "tsc --noEmit",
+    "check:static-assets": "node scripts/check-static-assets.mjs",
+    "check": "npm run typecheck && npm run check:static-assets",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",

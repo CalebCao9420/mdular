@@ -1,10 +1,14 @@
 /// <reference path="../types/global.d.ts" />
 
 const dirtyPaths = new Set<string>();
+const dirtyEditorHooks = new WeakSet<object>();
 let vcsStatusEl: HTMLElement | null = null;
 
 function markPathDirty(path: string | undefined | null): void {
   if (!path || path.startsWith('/??')) {
+    return;
+  }
+  if (dirtyPaths.has(path)) {
     return;
   }
   dirtyPaths.add(path);
@@ -16,7 +20,9 @@ function markPathClean(path: string | undefined | null): void {
   if (!path) {
     return;
   }
-  dirtyPaths.delete(path);
+  if (!dirtyPaths.delete(path)) {
+    return;
+  }
   updateVcsStatusUI();
   renderSidebar('', dirtyPaths.size ? Array.from(dirtyPaths) : undefined);
 }
@@ -77,6 +83,11 @@ function syncDirtyFromEditor(): void {
 }
 
 function hookEditorDirty(cm: CodeMirrorEditor): void {
+  const editorKey = cm as unknown as object;
+  if (dirtyEditorHooks.has(editorKey)) {
+    return;
+  }
+  dirtyEditorHooks.add(editorKey);
   cm.on('change', () => {
     syncDirtyFromEditor();
   });
