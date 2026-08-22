@@ -1,13 +1,18 @@
-// MD Toolkit — web-only, local-first. No sync server.
+// Application metadata is injected from app.manifest.json by scripts/build.mjs.
 
-const APP_NAME = 'MD Toolkit';
+const APP_NAME = __APP_NAME__;
+const WORKSPACE_CONFIG_PATH = __APP_WORKSPACE_CONFIG_PATH__;
 const APP_PORT = 8765;
 const STORAGE_SCHEMA_VERSION = 1;
 
 const LEGACY_STORAGE_KEYS = ['server', 'lastServerOk', 'apiUrl'] as const;
 
+function appStorageKey(key: string): string {
+  return `${APP_NAME}:${key}`;
+}
+
 function migrateLegacyStorage(): void {
-  const versionKey = 'mdToolkitStorageVersion';
+  const versionKey = appStorageKey('storage-schema-version');
   if (localStorage.getItem(versionKey) === String(STORAGE_SCHEMA_VERSION)) {
     return;
   }
@@ -18,19 +23,19 @@ function migrateLegacyStorage(): void {
   log('Migrated localStorage (removed legacy sync keys)');
 }
 
-function getToolkitHelpIntro(): string {
+function getAppHelpIntro(): string {
   return (
-    '# MD Toolkit\n\n' +
+    `# ${APP_NAME}\n\n` +
     'Local-first markdown workspace. Your notes stay as plain `.md` files on disk.\n\n' +
     '## First steps\n\n' +
     '1. Click **Open folder** and choose your notes or project docs directory.\n\n' +
     '2. Check **Allow on every visit** (Chrome/Edge) so the app can save files.\n\n' +
     '3. Press **Ctrl+Enter** to open **Chat** — quick capture for ideas and tasks.\n\n' +
-    '4. Optional: install as PWA from the browser menu (*Install MD Toolkit*).\n\n' +
-    '5. Optional plugins: add `.mdtk/config.json` in your workspace (see below).\n\n' +
+    `4. Optional: install as PWA from the browser menu (*Install ${APP_NAME}*).\n\n` +
+    `5. Optional plugins: add \`${WORKSPACE_CONFIG_PATH}\` in your workspace (see below).\n\n` +
     'Without a bound folder, data may live in browser storage only (not recommended).\n\n' +
     '## Plugins\n\n' +
-    'Enable plugins with `.mdtk/config.json`:\n\n' +
+    `Enable plugins with \`${WORKSPACE_CONFIG_PATH}\`:\n\n` +
     '```json\n{\n  "plugins": ["docs", "kanban"]\n}\n```\n\n' +
     '### Kanban (`issues/`)\n\n' +
     '- **Ctrl+Shift+B** — open the ticket board\n' +
@@ -43,8 +48,10 @@ function getToolkitHelpIntro(): string {
 
 Object.assign(globalThis, {
   APP_NAME,
+  WORKSPACE_CONFIG_PATH,
   APP_PORT,
   STORAGE_SCHEMA_VERSION,
+  appStorageKey,
   migrateLegacyStorage,
-  getToolkitHelpIntro,
+  getAppHelpIntro,
 });

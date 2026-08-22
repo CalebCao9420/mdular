@@ -1,5 +1,6 @@
 // Generated from src/ — edit TypeScript and run: npm run build
 
+const WORKSPACE_HINT_DISMISSED_KEY = appStorageKey("workspace-hint-dismissed");
 let launcherWorkspacePath = "";
 let launcherPluginIds = [];
 function getLauncherWorkspacePath() {
@@ -20,23 +21,23 @@ async function tauriInvoke(cmd, args) {
 }
 function applyAppShellMode(shell) {
   if (shell) {
-    document.documentElement.classList.add("mdtk-app-shell");
+    document.documentElement.classList.add("app-shell");
   }
 }
 function removeWorkspaceHintBanner() {
-  document.getElementById("mdtk-workspace-hint")?.remove();
+  document.getElementById("app-workspace-hint")?.remove();
 }
 function showWorkspaceHintBanner(path) {
-  if (!path || sessionStorage.getItem("mdtkWorkspaceHintDismissed") === path) {
+  if (!path || sessionStorage.getItem(WORKSPACE_HINT_DISMISSED_KEY) === path) {
     return;
   }
-  if (document.getElementById("mdtk-workspace-hint")) {
+  if (document.getElementById("app-workspace-hint")) {
     return;
   }
   const banner = document.createElement("div");
-  banner.id = "mdtk-workspace-hint";
-  banner.className = "mdtk-workspace-hint";
-  banner.innerHTML = '<span class="mdtk-workspace-hint-text">\u542F\u52A8\u5668\u6307\u5B9A\u6587\u4EF6\u5939\uFF1A<code></code></span><div class="mdtk-workspace-hint-actions"><button type="button" id="mdtk-workspace-hint-open">\u6253\u5F00\u6587\u4EF6\u5939</button><button type="button" id="mdtk-workspace-hint-dismiss">\u77E5\u9053\u4E86</button></div>';
+  banner.id = "app-workspace-hint";
+  banner.className = "app-workspace-hint";
+  banner.innerHTML = '<span class="app-workspace-hint-text">\u542F\u52A8\u5668\u6307\u5B9A\u6587\u4EF6\u5939\uFF1A<code></code></span><div class="app-workspace-hint-actions"><button type="button" id="app-workspace-hint-open">\u6253\u5F00\u6587\u4EF6\u5939</button><button type="button" id="app-workspace-hint-dismiss">\u77E5\u9053\u4E86</button></div>';
   const code = banner.querySelector("code");
   if (code) {
     code.textContent = path;
@@ -47,11 +48,11 @@ function showWorkspaceHintBanner(path) {
   } else {
     document.body.prepend(banner);
   }
-  document.getElementById("mdtk-workspace-hint-open")?.addEventListener("click", () => {
+  document.getElementById("app-workspace-hint-open")?.addEventListener("click", () => {
     void openDir();
   });
-  document.getElementById("mdtk-workspace-hint-dismiss")?.addEventListener("click", () => {
-    sessionStorage.setItem("mdtkWorkspaceHintDismissed", path);
+  document.getElementById("app-workspace-hint-dismiss")?.addEventListener("click", () => {
+    sessionStorage.setItem(WORKSPACE_HINT_DISMISSED_KEY, path);
     removeWorkspaceHintBanner();
   });
 }
@@ -96,7 +97,7 @@ async function initTauriShell(hint) {
   let path = (hint?.workspacePath || "").trim();
   if (!path) {
     try {
-      const fromRust = await tauriInvoke("mdtk_get_workspace_path");
+      const fromRust = await tauriInvoke("workspace_get_path");
       path = (fromRust || "").trim();
     } catch {
     }
@@ -142,17 +143,17 @@ function ensureUpdateDownloadHud() {
       return;
     }
     overlay = document.createElement("div");
-    overlay.id = "mdtk-update-overlay";
-    overlay.className = "mdtk-update-overlay";
+    overlay.id = "app-update-overlay";
+    overlay.className = "app-update-overlay";
     overlay.hidden = true;
-    overlay.innerHTML = '<div class="mdtk-update-panel" role="dialog" aria-labelledby="mdtk-update-title" aria-live="polite"><div class="mdtk-update-header"><h2 id="mdtk-update-title">\u8F6F\u4EF6\u66F4\u65B0</h2><p class="mdtk-update-subtitle"></p></div><p class="mdtk-update-status"></p><div class="mdtk-update-bar" aria-hidden="true"><div class="mdtk-update-bar-fill"></div></div><p class="mdtk-update-percent"></p><div class="mdtk-update-actions"></div></div>';
+    overlay.innerHTML = '<div class="app-update-panel" role="dialog" aria-labelledby="app-update-title" aria-live="polite"><div class="app-update-header"><h2 id="app-update-title">\u8F6F\u4EF6\u66F4\u65B0</h2><p class="app-update-subtitle"></p></div><p class="app-update-status"></p><div class="app-update-bar" aria-hidden="true"><div class="app-update-bar-fill"></div></div><p class="app-update-percent"></p><div class="app-update-actions"></div></div>';
     document.body.appendChild(overlay);
-    statusEl = overlay.querySelector(".mdtk-update-status");
-    barFill = overlay.querySelector(".mdtk-update-bar-fill");
-    titleEl = overlay.querySelector("#mdtk-update-title");
-    subtitleEl = overlay.querySelector(".mdtk-update-subtitle");
-    percentEl = overlay.querySelector(".mdtk-update-percent");
-    actionsEl = overlay.querySelector(".mdtk-update-actions");
+    statusEl = overlay.querySelector(".app-update-status");
+    barFill = overlay.querySelector(".app-update-bar-fill");
+    titleEl = overlay.querySelector("#app-update-title");
+    subtitleEl = overlay.querySelector(".app-update-subtitle");
+    percentEl = overlay.querySelector(".app-update-percent");
+    actionsEl = overlay.querySelector(".app-update-actions");
   };
   const setActions = (html) => {
     if (actionsEl) {
@@ -166,16 +167,16 @@ function ensureUpdateDownloadHud() {
     }
     clearHideTimer();
     overlay.hidden = false;
-    overlay.classList.remove("mdtk-update-overlay--error");
+    overlay.classList.remove("app-update-overlay--error");
   };
   const hideOverlay = () => {
     clearHideTimer();
     if (overlay) {
       overlay.hidden = true;
       overlay.classList.remove(
-        "mdtk-update-overlay--error",
-        "mdtk-update-overlay--indeterminate",
-        "mdtk-update-overlay--installing"
+        "app-update-overlay--error",
+        "app-update-overlay--indeterminate",
+        "app-update-overlay--installing"
       );
     }
     setActions("");
@@ -197,14 +198,14 @@ function ensureUpdateDownloadHud() {
     if (percentEl) {
       percentEl.textContent = opts?.indeterminate || opts?.installing ? "" : percent > 0 ? `${percent}%` : "";
     }
-    overlay?.classList.toggle("mdtk-update-overlay--indeterminate", !!opts?.indeterminate);
-    overlay?.classList.toggle("mdtk-update-overlay--installing", !!opts?.installing);
+    overlay?.classList.toggle("app-update-overlay--indeterminate", !!opts?.indeterminate);
+    overlay?.classList.toggle("app-update-overlay--installing", !!opts?.installing);
     setActions("");
   };
   const showError = (message) => {
     showOverlay();
-    overlay?.classList.add("mdtk-update-overlay--error");
-    overlay?.classList.remove("mdtk-update-overlay--indeterminate", "mdtk-update-overlay--installing");
+    overlay?.classList.add("app-update-overlay--error");
+    overlay?.classList.remove("app-update-overlay--indeterminate", "app-update-overlay--installing");
     if (titleEl) {
       titleEl.textContent = "\u66F4\u65B0\u5931\u8D25";
     }
@@ -220,8 +221,8 @@ function ensureUpdateDownloadHud() {
     if (percentEl) {
       percentEl.textContent = "";
     }
-    setActions('<button type="button" class="mdtk-update-dismiss">\u5173\u95ED</button>');
-    actionsEl?.querySelector(".mdtk-update-dismiss")?.addEventListener("click", hideOverlay, {
+    setActions('<button type="button" class="app-update-dismiss">\u5173\u95ED</button>');
+    actionsEl?.querySelector(".app-update-dismiss")?.addEventListener("click", hideOverlay, {
       once: true
     });
     clearHideTimer();
@@ -254,7 +255,7 @@ function handleUpdateHudPayload(payload) {
       break;
   }
 }
-function __mdtkUpdateHud(payload) {
+function __appUpdateHud(payload) {
   handleUpdateHudPayload(payload);
 }
 function initUpdateDownloadPanel() {
@@ -316,5 +317,5 @@ Object.assign(globalThis, {
   isTauriHost,
   tauriInvoke,
   removeWorkspaceHintBanner,
-  __mdtkUpdateHud
+  __appUpdateHud
 });

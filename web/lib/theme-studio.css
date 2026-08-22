@@ -1,5 +1,5 @@
 /*
- * MD Toolkit Studio shell
+ * Application Studio shell
  *
  * A self-contained visual sample for the application chrome. It deliberately
  * leaves editor semantics and plugin layouts alone, so the direction can be
@@ -7,97 +7,97 @@
  */
 
 :root {
-    --mdtk-motion-fast: 120ms;
-    --mdtk-motion-normal: 220ms;
-    --mdtk-motion-slow: 320ms;
-    --mdtk-ease-out: cubic-bezier(0.22, 0.78, 0.24, 1);
-    --mdtk-ease-spring: cubic-bezier(0.2, 0.9, 0.3, 1.15);
-    --mdtk-radius-sm: 8px;
-    --mdtk-radius-md: 12px;
-    --mdtk-radius-lg: 16px;
-    --mdtk-rail-width: 52px;
+    --app-motion-fast: 120ms;
+    --app-motion-normal: 220ms;
+    --app-motion-slow: 320ms;
+    --app-ease-out: cubic-bezier(0.22, 0.78, 0.24, 1);
+    --app-ease-spring: cubic-bezier(0.2, 0.9, 0.3, 1.15);
+    --app-radius-sm: 8px;
+    --app-radius-md: 12px;
+    --app-radius-lg: 16px;
+    --app-rail-width: 52px;
 }
 
 @media (prefers-color-scheme: light) {
     :root {
-        --mdtk-shell: #e9e9e3;
-        --mdtk-rail: #e4e5df;
-        --mdtk-sidebar: #f3f3ee;
-        --mdtk-paper: #fbfaf6;
-        --mdtk-surface: #ffffff;
-        --mdtk-surface-muted: #eeeee8;
-        --mdtk-border: #d4d7cf;
-        --mdtk-border-strong: #b9c0b7;
-        --mdtk-text: #252a26;
-        --mdtk-muted: #737b74;
-        --mdtk-accent: #3f7468;
-        --mdtk-accent-soft: #dceae4;
-        --mdtk-warm: #c67649;
-        --mdtk-shadow-color: rgba(41, 49, 44, 0.14);
+        --app-shell: #e9e9e3;
+        --app-rail: #e4e5df;
+        --app-sidebar: #f3f3ee;
+        --app-paper: #fbfaf6;
+        --app-surface: #ffffff;
+        --app-surface-muted: #eeeee8;
+        --app-border: #d4d7cf;
+        --app-border-strong: #b9c0b7;
+        --app-text: #252a26;
+        --app-muted: #737b74;
+        --app-accent: #3f7468;
+        --app-accent-soft: #dceae4;
+        --app-warm: #c67649;
+        --app-shadow-color: rgba(41, 49, 44, 0.14);
 
-        --color-neo-bg: var(--mdtk-paper) !important;
-        --color-neo-text: var(--mdtk-text) !important;
-        --color-neo-border: var(--mdtk-border) !important;
-        --color-neo-blue: var(--mdtk-accent) !important;
-        --color-neo-lime: var(--mdtk-accent-soft) !important;
-        --color-neo-orange: var(--mdtk-warm) !important;
-        --col-tx: var(--mdtk-text) !important;
-        --col-tx-alt: var(--mdtk-muted) !important;
-        --col-bg: var(--mdtk-paper) !important;
-        --col-bg-alt: var(--mdtk-sidebar) !important;
-        --col-bg-active: var(--mdtk-surface-muted) !important;
-        --col-border: var(--mdtk-border) !important;
-        --col-link: var(--mdtk-accent) !important;
-        --col-link-hover: var(--mdtk-warm) !important;
-        --col-tx-hover: var(--mdtk-accent) !important;
-        --col-accent: var(--mdtk-accent) !important;
-        --col-marker: var(--mdtk-warm) !important;
-        --col-tx-sel: color-mix(in srgb, var(--mdtk-accent) 28%, transparent) !important;
+        --color-neo-bg: var(--app-paper) !important;
+        --color-neo-text: var(--app-text) !important;
+        --color-neo-border: var(--app-border) !important;
+        --color-neo-blue: var(--app-accent) !important;
+        --color-neo-lime: var(--app-accent-soft) !important;
+        --color-neo-orange: var(--app-warm) !important;
+        --col-tx: var(--app-text) !important;
+        --col-tx-alt: var(--app-muted) !important;
+        --col-bg: var(--app-paper) !important;
+        --col-bg-alt: var(--app-sidebar) !important;
+        --col-bg-active: var(--app-surface-muted) !important;
+        --col-border: var(--app-border) !important;
+        --col-link: var(--app-accent) !important;
+        --col-link-hover: var(--app-warm) !important;
+        --col-tx-hover: var(--app-accent) !important;
+        --col-accent: var(--app-accent) !important;
+        --col-marker: var(--app-warm) !important;
+        --col-tx-sel: color-mix(in srgb, var(--app-accent) 28%, transparent) !important;
     }
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --mdtk-shell: #121715;
-        --mdtk-rail: #171d1a;
-        --mdtk-sidebar: #1b221f;
-        --mdtk-paper: #202824;
-        --mdtk-surface: #28312d;
-        --mdtk-surface-muted: #252d29;
-        --mdtk-border: #35413b;
-        --mdtk-border-strong: #4c5b53;
-        --mdtk-text: #e8ece8;
-        --mdtk-muted: #9ba69f;
-        --mdtk-accent: #82b8a7;
-        --mdtk-accent-soft: #29453c;
-        --mdtk-warm: #dfa06f;
-        --mdtk-shadow-color: rgba(0, 0, 0, 0.38);
+        --app-shell: #121715;
+        --app-rail: #171d1a;
+        --app-sidebar: #1b221f;
+        --app-paper: #202824;
+        --app-surface: #28312d;
+        --app-surface-muted: #252d29;
+        --app-border: #35413b;
+        --app-border-strong: #4c5b53;
+        --app-text: #e8ece8;
+        --app-muted: #9ba69f;
+        --app-accent: #82b8a7;
+        --app-accent-soft: #29453c;
+        --app-warm: #dfa06f;
+        --app-shadow-color: rgba(0, 0, 0, 0.38);
 
-        --color-neo-bg: var(--mdtk-paper) !important;
-        --color-neo-text: var(--mdtk-text) !important;
-        --color-neo-border: var(--mdtk-border) !important;
-        --color-neo-blue: var(--mdtk-accent) !important;
-        --color-neo-lime: var(--mdtk-accent-soft) !important;
-        --color-neo-orange: var(--mdtk-warm) !important;
-        --col-tx: var(--mdtk-text) !important;
-        --col-tx-alt: var(--mdtk-muted) !important;
-        --col-bg: var(--mdtk-paper) !important;
-        --col-bg-alt: var(--mdtk-sidebar) !important;
-        --col-bg-active: var(--mdtk-surface-muted) !important;
-        --col-border: var(--mdtk-border) !important;
-        --col-link: var(--mdtk-accent) !important;
-        --col-link-hover: var(--mdtk-warm) !important;
-        --col-tx-hover: var(--mdtk-accent) !important;
-        --col-accent: var(--mdtk-accent) !important;
-        --col-marker: var(--mdtk-warm) !important;
-        --col-tx-sel: color-mix(in srgb, var(--mdtk-accent) 34%, transparent) !important;
+        --color-neo-bg: var(--app-paper) !important;
+        --color-neo-text: var(--app-text) !important;
+        --color-neo-border: var(--app-border) !important;
+        --color-neo-blue: var(--app-accent) !important;
+        --color-neo-lime: var(--app-accent-soft) !important;
+        --color-neo-orange: var(--app-warm) !important;
+        --col-tx: var(--app-text) !important;
+        --col-tx-alt: var(--app-muted) !important;
+        --col-bg: var(--app-paper) !important;
+        --col-bg-alt: var(--app-sidebar) !important;
+        --col-bg-active: var(--app-surface-muted) !important;
+        --col-border: var(--app-border) !important;
+        --col-link: var(--app-accent) !important;
+        --col-link-hover: var(--app-warm) !important;
+        --col-tx-hover: var(--app-accent) !important;
+        --col-accent: var(--app-accent) !important;
+        --col-marker: var(--app-warm) !important;
+        --col-tx-sel: color-mix(in srgb, var(--app-accent) 34%, transparent) !important;
     }
 }
 
 body {
-    background: var(--mdtk-shell);
+    background: var(--app-shell);
     letter-spacing: -0.006em;
-    animation: mdtk-shell-enter var(--mdtk-motion-slow) var(--mdtk-ease-out) both;
+    animation: app-shell-enter var(--app-motion-slow) var(--app-ease-out) both;
 }
 
 button,
@@ -111,7 +111,7 @@ button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 [tabindex]:focus-visible {
-    outline: 2px solid var(--mdtk-accent) !important;
+    outline: 2px solid var(--app-accent) !important;
     outline-offset: 2px;
 }
 
@@ -119,16 +119,16 @@ textarea:focus-visible,
 #sidebar {
     width: 304px !important;
     padding-left: 0;
-    background: var(--mdtk-sidebar);
-    border-right: 1px solid var(--mdtk-border);
-    box-shadow: 8px 0 28px color-mix(in srgb, var(--mdtk-shadow-color) 42%, transparent);
+    background: var(--app-sidebar);
+    border-right: 1px solid var(--app-border);
+    box-shadow: 8px 0 28px color-mix(in srgb, var(--app-shadow-color) 42%, transparent);
     isolation: isolate;
 }
 
 #toolbar {
     position: absolute;
     inset: 0 auto 0 0;
-    width: var(--mdtk-rail-width);
+    width: var(--app-rail-width);
     height: 100%;
     padding: 10px 7px;
     display: flex;
@@ -137,8 +137,8 @@ textarea:focus-visible,
     align-items: center;
     align-content: center;
     gap: 6px;
-    background: var(--mdtk-rail);
-    border-right: 1px solid var(--mdtk-border);
+    background: var(--app-rail);
+    border-right: 1px solid var(--app-border);
     overflow: visible;
 }
 
@@ -149,11 +149,11 @@ textarea:focus-visible,
     margin-bottom: 7px;
     display: grid;
     place-items: center;
-    border: 1px solid var(--mdtk-border-strong);
+    border: 1px solid var(--app-border-strong);
     border-radius: 11px;
-    background: var(--mdtk-paper);
-    color: var(--mdtk-accent);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--mdtk-shadow-color) 35%, transparent);
+    background: var(--app-paper);
+    color: var(--app-accent);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--app-shadow-color) 35%, transparent);
     font-size: 16px;
     font-weight: 750;
     line-height: 1;
@@ -169,12 +169,12 @@ textarea:focus-visible,
     place-items: center;
     border: 1px solid transparent;
     border-radius: 10px !important;
-    color: var(--mdtk-muted);
+    color: var(--app-muted);
     transition:
-        color var(--mdtk-motion-fast) ease,
-        background-color var(--mdtk-motion-fast) ease,
-        border-color var(--mdtk-motion-fast) ease,
-        transform var(--mdtk-motion-fast) var(--mdtk-ease-spring);
+        color var(--app-motion-fast) ease,
+        background-color var(--app-motion-fast) ease,
+        border-color var(--app-motion-fast) ease,
+        transform var(--app-motion-fast) var(--app-ease-spring);
 }
 
 #toolbar button svg {
@@ -192,9 +192,9 @@ textarea:focus-visible,
 #toolbar button:hover,
 #toolbar button.active,
 #toolbar button[aria-pressed="true"] {
-    color: var(--mdtk-accent);
-    background: var(--mdtk-surface);
-    border-color: var(--mdtk-border);
+    color: var(--app-accent);
+    background: var(--app-surface);
+    border-color: var(--app-border);
     transform: translateY(-1px);
 }
 
@@ -220,14 +220,14 @@ textarea:focus-visible,
     margin: 0;
     padding: 6px 10px;
     transform: translate(-4px, -50%);
-    border: 1px solid color-mix(in srgb, var(--mdtk-border) 65%, transparent);
+    border: 1px solid color-mix(in srgb, var(--app-border) 65%, transparent);
     border-radius: 8px;
-    background: var(--mdtk-text);
-    color: var(--mdtk-paper);
-    box-shadow: 0 8px 24px var(--mdtk-shadow-color);
+    background: var(--app-text);
+    color: var(--app-paper);
+    box-shadow: 0 8px 24px var(--app-shadow-color);
     transition:
-        opacity var(--mdtk-motion-fast) ease,
-        transform var(--mdtk-motion-fast) var(--mdtk-ease-out);
+        opacity var(--app-motion-fast) ease,
+        transform var(--app-motion-fast) var(--app-ease-out);
 }
 
 #toolbar button::before {
@@ -238,10 +238,10 @@ textarea:focus-visible,
     border: 0;
     border-top: 5px solid transparent;
     border-bottom: 5px solid transparent;
-    border-right: 6px solid var(--mdtk-text);
+    border-right: 6px solid var(--app-text);
     transition:
-        opacity var(--mdtk-motion-fast) ease,
-        transform var(--mdtk-motion-fast) var(--mdtk-ease-out);
+        opacity var(--app-motion-fast) ease,
+        transform var(--app-motion-fast) var(--app-ease-out);
 }
 
 #toolbar button:hover::after {
@@ -255,12 +255,12 @@ textarea:focus-visible,
 #tree,
 #reading-panel,
 #open-folder {
-    margin-left: var(--mdtk-rail-width);
+    margin-left: var(--app-rail-width);
 }
 
 #tree {
     padding: 8px 8px 16px;
-    background: var(--mdtk-sidebar);
+    background: var(--app-sidebar);
     scrollbar-gutter: stable;
 }
 
@@ -272,9 +272,9 @@ textarea:focus-visible,
     display: block;
     margin: -8px -8px 7px;
     padding: 14px 12px 8px;
-    background: color-mix(in srgb, var(--mdtk-sidebar) 92%, transparent);
+    background: color-mix(in srgb, var(--app-sidebar) 92%, transparent);
     backdrop-filter: blur(10px);
-    color: var(--mdtk-muted);
+    color: var(--app-muted);
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.14em;
@@ -285,29 +285,29 @@ textarea:focus-visible,
     margin: 2px 0;
     padding: 6px 9px;
     border: 1px solid transparent;
-    border-radius: var(--mdtk-radius-sm) !important;
-    color: var(--mdtk-muted);
+    border-radius: var(--app-radius-sm) !important;
+    color: var(--app-muted);
     font-size: 1em;
     transition:
-        color var(--mdtk-motion-fast) ease,
-        background-color var(--mdtk-motion-fast) ease,
-        border-color var(--mdtk-motion-fast) ease,
-        transform var(--mdtk-motion-fast) var(--mdtk-ease-out);
+        color var(--app-motion-fast) ease,
+        background-color var(--app-motion-fast) ease,
+        border-color var(--app-motion-fast) ease,
+        transform var(--app-motion-fast) var(--app-ease-out);
 }
 
 .tree-container li span.tree-item:hover {
-    background: var(--mdtk-surface) !important;
-    border-color: var(--mdtk-border);
-    color: var(--mdtk-text) !important;
+    background: var(--app-surface) !important;
+    border-color: var(--app-border);
+    color: var(--app-text) !important;
     transform: translateX(2px);
 }
 
 .tree-container span.tree-item.tree-leaf.selected,
 .tree-container span.tree-item.tree-leaf.selected:hover {
-    background: var(--mdtk-accent-soft) !important;
-    border-color: color-mix(in srgb, var(--mdtk-accent) 32%, var(--mdtk-border));
-    box-shadow: inset 3px 0 var(--mdtk-accent);
-    color: var(--mdtk-accent) !important;
+    background: var(--app-accent-soft) !important;
+    border-color: color-mix(in srgb, var(--app-accent) 32%, var(--app-border));
+    box-shadow: inset 3px 0 var(--app-accent);
+    color: var(--app-accent) !important;
 }
 
 .tree-container li span.tree-item:hover .tree-mod_icon svg,
@@ -318,12 +318,12 @@ textarea:focus-visible,
 
 .tree-mod_icon svg {
     stroke: currentColor;
-    transition: stroke var(--mdtk-motion-fast) ease;
+    transition: stroke var(--app-motion-fast) ease;
 }
 
 .tree-group_title {
     padding: 10px 9px 5px;
-    color: var(--mdtk-muted);
+    color: var(--app-muted);
     font-size: 0.72em;
     font-weight: 700;
     letter-spacing: 0.1em;
@@ -337,14 +337,14 @@ textarea:focus-visible,
     height: 30px;
     border: 1px solid transparent;
     border-radius: 9px;
-    background: color-mix(in srgb, var(--mdtk-sidebar) 86%, transparent);
-    color: var(--mdtk-muted) !important;
+    background: color-mix(in srgb, var(--app-sidebar) 86%, transparent);
+    color: var(--app-muted) !important;
     opacity: 0.58;
     transition:
-        opacity var(--mdtk-motion-fast) ease,
-        color var(--mdtk-motion-fast) ease,
-        background-color var(--mdtk-motion-fast) ease,
-        transform var(--mdtk-motion-fast) var(--mdtk-ease-spring);
+        opacity var(--app-motion-fast) ease,
+        color var(--app-motion-fast) ease,
+        background-color var(--app-motion-fast) ease,
+        transform var(--app-motion-fast) var(--app-ease-spring);
 }
 
 #sidebar:hover #close-sidebar {
@@ -352,21 +352,21 @@ textarea:focus-visible,
 }
 
 #close-sidebar:hover {
-    background: var(--mdtk-surface);
-    color: var(--mdtk-warm) !important;
+    background: var(--app-surface);
+    color: var(--app-warm) !important;
     opacity: 1 !important;
     transform: scale(1.04);
 }
 
 .resize::after {
     background: transparent;
-    transition: background-color var(--mdtk-motion-fast) ease, width var(--mdtk-motion-fast) ease;
+    transition: background-color var(--app-motion-fast) ease, width var(--app-motion-fast) ease;
 }
 
 .resize:hover::after {
     width: 3px;
     right: 5px;
-    background: var(--mdtk-accent);
+    background: var(--app-accent);
 }
 
 #open-folder {
@@ -374,20 +374,20 @@ textarea:focus-visible,
     margin-right: 10px;
     margin-bottom: 12px;
     padding: 9px 10px;
-    border: 1px dashed var(--mdtk-border-strong);
-    border-radius: var(--mdtk-radius-md);
-    background: color-mix(in srgb, var(--mdtk-accent-soft) 58%, transparent);
-    color: var(--mdtk-accent);
+    border: 1px dashed var(--app-border-strong);
+    border-radius: var(--app-radius-md);
+    background: color-mix(in srgb, var(--app-accent-soft) 58%, transparent);
+    color: var(--app-accent);
     transition:
-        border-color var(--mdtk-motion-fast) ease,
-        background-color var(--mdtk-motion-fast) ease,
-        transform var(--mdtk-motion-fast) var(--mdtk-ease-out);
+        border-color var(--app-motion-fast) ease,
+        background-color var(--app-motion-fast) ease,
+        transform var(--app-motion-fast) var(--app-ease-out);
 }
 
 #open-folder:hover {
-    border-color: var(--mdtk-accent);
-    background: var(--mdtk-accent-soft);
-    color: var(--mdtk-accent);
+    border-color: var(--app-accent);
+    background: var(--app-accent-soft);
+    color: var(--app-accent);
     transform: translateY(-1px);
 }
 
@@ -400,8 +400,8 @@ textarea:focus-visible,
 #content {
     position: relative;
     background:
-        radial-gradient(circle at 78% -12%, color-mix(in srgb, var(--mdtk-accent) 9%, transparent), transparent 38%),
-        var(--mdtk-paper);
+        radial-gradient(circle at 78% -12%, color-mix(in srgb, var(--app-accent) 9%, transparent), transparent 38%),
+        var(--app-paper);
 }
 
 #editor-container,
@@ -415,26 +415,26 @@ textarea:focus-visible,
     padding-top: 3em;
     padding-bottom: 5em;
     background:
-        radial-gradient(circle at 78% -12%, color-mix(in srgb, var(--mdtk-accent) 8%, transparent), transparent 38%),
-        var(--mdtk-paper) !important;
+        radial-gradient(circle at 78% -12%, color-mix(in srgb, var(--app-accent) 8%, transparent), transparent 38%),
+        var(--app-paper) !important;
 }
 
 .CodeMirror-activeline-background {
-    background: color-mix(in srgb, var(--mdtk-accent) 6%, transparent) !important;
+    background: color-mix(in srgb, var(--app-accent) 6%, transparent) !important;
 }
 
 .CodeMirror-cursor {
-    border-left-color: var(--mdtk-warm) !important;
+    border-left-color: var(--app-warm) !important;
     background: transparent !important;
 }
 
 .CodeMirror-hints {
     padding: 5px !important;
-    border: 1px solid var(--mdtk-border) !important;
-    border-radius: var(--mdtk-radius-md) !important;
-    background: var(--mdtk-surface) !important;
-    box-shadow: 0 14px 36px var(--mdtk-shadow-color) !important;
-    animation: mdtk-pop-in var(--mdtk-motion-normal) var(--mdtk-ease-out) both;
+    border: 1px solid var(--app-border) !important;
+    border-radius: var(--app-radius-md) !important;
+    background: var(--app-surface) !important;
+    box-shadow: 0 14px 36px var(--app-shadow-color) !important;
+    animation: app-pop-in var(--app-motion-normal) var(--app-ease-out) both;
 }
 
 .CodeMirror-hint {
@@ -442,8 +442,8 @@ textarea:focus-visible,
 }
 
 .CodeMirror-hint-active {
-    background: var(--mdtk-accent-soft) !important;
-    color: var(--mdtk-accent) !important;
+    background: var(--app-accent-soft) !important;
+    color: var(--app-accent) !important;
 }
 
 /* Popovers, dialogs and transient feedback */
@@ -452,28 +452,28 @@ textarea:focus-visible,
 #new-file-template,
 #project-scaffold {
     padding: 10px;
-    border: 1px solid var(--mdtk-border);
-    border-radius: var(--mdtk-radius-lg);
-    background: color-mix(in srgb, var(--mdtk-surface) 96%, transparent);
-    box-shadow: 0 18px 52px var(--mdtk-shadow-color);
+    border: 1px solid var(--app-border);
+    border-radius: var(--app-radius-lg);
+    background: color-mix(in srgb, var(--app-surface) 96%, transparent);
+    box-shadow: 0 18px 52px var(--app-shadow-color);
     backdrop-filter: blur(18px);
-    animation: mdtk-pop-in var(--mdtk-motion-normal) var(--mdtk-ease-out) both;
+    animation: app-pop-in var(--app-motion-normal) var(--app-ease-out) both;
 }
 
 #search-input,
 #move-input {
     padding: 10px 12px;
-    border: 1px solid var(--mdtk-border);
+    border: 1px solid var(--app-border);
     border-radius: 10px;
-    background: var(--mdtk-paper);
-    color: var(--mdtk-text);
-    transition: border-color var(--mdtk-motion-fast) ease, box-shadow var(--mdtk-motion-fast) ease;
+    background: var(--app-paper);
+    color: var(--app-text);
+    transition: border-color var(--app-motion-fast) ease, box-shadow var(--app-motion-fast) ease;
 }
 
 #search-input:focus,
 #move-input:focus {
-    border-color: var(--mdtk-accent);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--mdtk-accent) 16%, transparent);
+    border-color: var(--app-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent) 16%, transparent);
 }
 
 #search-results li,
@@ -483,106 +483,106 @@ textarea:focus-visible,
     border: 1px solid transparent;
     border-radius: 9px;
     transition:
-        color var(--mdtk-motion-fast) ease,
-        background-color var(--mdtk-motion-fast) ease,
-        border-color var(--mdtk-motion-fast) ease,
-        transform var(--mdtk-motion-fast) var(--mdtk-ease-out);
+        color var(--app-motion-fast) ease,
+        background-color var(--app-motion-fast) ease,
+        border-color var(--app-motion-fast) ease,
+        transform var(--app-motion-fast) var(--app-ease-out);
 }
 
 #search-results .focused,
 #move-results .focused,
 #new-file-template-options li.focused,
 #project-scaffold-options li.focused {
-    background: var(--mdtk-accent-soft) !important;
-    border-color: color-mix(in srgb, var(--mdtk-accent) 28%, var(--mdtk-border));
+    background: var(--app-accent-soft) !important;
+    border-color: color-mix(in srgb, var(--app-accent) 28%, var(--app-border));
     border-radius: 9px !important;
-    color: var(--mdtk-accent) !important;
+    color: var(--app-accent) !important;
     transform: translateX(2px);
 }
 
 .sidebar-ctx-menu {
     padding: 5px;
-    border: 1px solid var(--mdtk-border);
-    border-radius: var(--mdtk-radius-md);
-    background: color-mix(in srgb, var(--mdtk-surface) 96%, transparent);
-    box-shadow: 0 16px 42px var(--mdtk-shadow-color);
+    border: 1px solid var(--app-border);
+    border-radius: var(--app-radius-md);
+    background: color-mix(in srgb, var(--app-surface) 96%, transparent);
+    box-shadow: 0 16px 42px var(--app-shadow-color);
     backdrop-filter: blur(16px);
-    animation: mdtk-pop-in var(--mdtk-motion-normal) var(--mdtk-ease-out) both;
+    animation: app-pop-in var(--app-motion-normal) var(--app-ease-out) both;
 }
 
 .sidebar-ctx-menu-item {
     border-radius: 7px;
-    transition: background-color var(--mdtk-motion-fast) ease, color var(--mdtk-motion-fast) ease;
+    transition: background-color var(--app-motion-fast) ease, color var(--app-motion-fast) ease;
 }
 
 .sidebar-ctx-menu-item:hover {
-    background: var(--mdtk-accent-soft);
-    color: var(--mdtk-accent);
+    background: var(--app-accent-soft);
+    color: var(--app-accent);
 }
 
 #vcs-menu,
-.mdtk-update-overlay {
+.app-update-overlay {
     background: color-mix(in srgb, #080b09 52%, transparent);
     backdrop-filter: blur(6px);
 }
 
 .vcs-menu-panel,
-.mdtk-update-panel {
-    border: 1px solid var(--mdtk-border);
-    border-radius: var(--mdtk-radius-lg);
-    background: var(--mdtk-surface);
-    box-shadow: 0 24px 72px var(--mdtk-shadow-color);
-    animation: mdtk-pop-in var(--mdtk-motion-normal) var(--mdtk-ease-out) both;
+.app-update-panel {
+    border: 1px solid var(--app-border);
+    border-radius: var(--app-radius-lg);
+    background: var(--app-surface);
+    box-shadow: 0 24px 72px var(--app-shadow-color);
+    animation: app-pop-in var(--app-motion-normal) var(--app-ease-out) both;
 }
 
 .vcs-menu-actions button,
-.mdtk-workspace-hint-actions button,
-.mdtk-update-dismiss {
-    border: 1px solid var(--mdtk-border);
+.app-workspace-hint-actions button,
+.app-update-dismiss {
+    border: 1px solid var(--app-border);
     border-radius: 9px;
-    background: var(--mdtk-paper);
-    color: var(--mdtk-text);
+    background: var(--app-paper);
+    color: var(--app-text);
     transition:
-        color var(--mdtk-motion-fast) ease,
-        background-color var(--mdtk-motion-fast) ease,
-        border-color var(--mdtk-motion-fast) ease,
-        transform var(--mdtk-motion-fast) var(--mdtk-ease-spring);
+        color var(--app-motion-fast) ease,
+        background-color var(--app-motion-fast) ease,
+        border-color var(--app-motion-fast) ease,
+        transform var(--app-motion-fast) var(--app-ease-spring);
 }
 
 .vcs-menu-actions button:hover,
-.mdtk-workspace-hint-actions button:hover,
-.mdtk-update-dismiss:hover {
-    border-color: var(--mdtk-accent);
-    background: var(--mdtk-accent-soft);
-    color: var(--mdtk-accent);
+.app-workspace-hint-actions button:hover,
+.app-update-dismiss:hover {
+    border-color: var(--app-accent);
+    background: var(--app-accent-soft);
+    color: var(--app-accent);
     transform: translateY(-1px);
 }
 
-.mdtk-workspace-hint {
-    border-bottom: 1px solid var(--mdtk-border);
-    background: color-mix(in srgb, var(--mdtk-accent-soft) 62%, var(--mdtk-sidebar));
+.app-workspace-hint {
+    border-bottom: 1px solid var(--app-border);
+    background: color-mix(in srgb, var(--app-accent-soft) 62%, var(--app-sidebar));
     font-size: 13px;
     line-height: 1.45;
 }
 
-.mdtk-workspace-hint-text code {
+.app-workspace-hint-text code {
     font-size: 12px;
 }
 
-.mdtk-workspace-hint-actions button {
+.app-workspace-hint-actions button {
     padding: 6px 11px;
     font-size: 12px;
 }
 
 #editor2-container {
-    border-left: 1px solid var(--mdtk-border);
-    box-shadow: -18px 0 44px color-mix(in srgb, var(--mdtk-shadow-color) 62%, transparent);
+    border-left: 1px solid var(--app-border);
+    box-shadow: -18px 0 44px color-mix(in srgb, var(--app-shadow-color) 62%, transparent);
 }
 
 #editor-container > .CodeMirror .CodeMirror-scroll {
     transition:
-        padding-left var(--mdtk-motion-slow) var(--mdtk-ease-out),
-        padding-right var(--mdtk-motion-slow) var(--mdtk-ease-out);
+        padding-left var(--app-motion-slow) var(--app-ease-out),
+        padding-right var(--app-motion-slow) var(--app-ease-out);
 }
 
 /* HyperMD's horizontal rule has two equally important states: raw `---` while
@@ -615,7 +615,7 @@ textarea:focus-visible,
     transform-origin: center;
 }
 
-.cm-s-hypermd-light div.HyperMD-hr-bg.mdtk-hr-rendered {
+.cm-s-hypermd-light div.HyperMD-hr-bg.app-hr-rendered {
     opacity: 1;
     transform: scaleX(1);
 }
@@ -626,8 +626,8 @@ textarea:focus-visible,
 }
 
 .hmd-image-preview {
-    border-color: color-mix(in srgb, var(--mdtk-border-strong) 70%, transparent);
-    box-shadow: 0 28px 80px color-mix(in srgb, var(--mdtk-shadow-color) 82%, transparent);
+    border-color: color-mix(in srgb, var(--app-border-strong) 70%, transparent);
+    box-shadow: 0 28px 80px color-mix(in srgb, var(--app-shadow-color) 82%, transparent);
 }
 
 #nav-buttons {
@@ -635,10 +635,10 @@ textarea:focus-visible,
     right: 8px;
     gap: 3px;
     padding: 4px;
-    border: 1px solid var(--mdtk-border);
+    border: 1px solid var(--app-border);
     border-radius: 11px;
-    background: color-mix(in srgb, var(--mdtk-surface) 92%, transparent);
-    box-shadow: 0 8px 24px color-mix(in srgb, var(--mdtk-shadow-color) 55%, transparent);
+    background: color-mix(in srgb, var(--app-surface) 92%, transparent);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--app-shadow-color) 55%, transparent);
     backdrop-filter: blur(12px);
 }
 
@@ -647,12 +647,12 @@ textarea:focus-visible,
     width: 30px;
     height: 30px;
     border-radius: 8px;
-    transition: background-color var(--mdtk-motion-fast) ease, transform var(--mdtk-motion-fast) var(--mdtk-ease-spring);
+    transition: background-color var(--app-motion-fast) ease, transform var(--app-motion-fast) var(--app-ease-spring);
 }
 
 .nav-button:hover,
 #close-editor2:hover {
-    background: var(--mdtk-accent-soft);
+    background: var(--app-accent-soft);
     transform: scale(1.04);
 }
 
@@ -662,9 +662,9 @@ textarea:focus-visible,
     width: 8px;
     height: 72px;
     border-radius: 999px;
-    background: var(--mdtk-accent);
+    background: var(--app-accent);
     opacity: 0.34;
-    transition: opacity var(--mdtk-motion-fast) ease, transform var(--mdtk-motion-fast) var(--mdtk-ease-spring);
+    transition: opacity var(--app-motion-fast) ease, transform var(--app-motion-fast) var(--app-ease-spring);
 }
 
 #open-sidebar:hover {
@@ -673,47 +673,47 @@ textarea:focus-visible,
 }
 
 #reading-panel {
-    border-bottom: 1px solid var(--mdtk-border);
-    background: var(--mdtk-sidebar);
+    border-bottom: 1px solid var(--app-border);
+    background: var(--app-sidebar);
 }
 
 .doc-meta-chip {
-    border-color: var(--mdtk-border);
-    background: var(--mdtk-surface);
+    border-color: var(--app-border);
+    background: var(--app-surface);
 }
 
 .doc-toc-item {
-    border-radius: var(--mdtk-radius-sm);
-    transition: color var(--mdtk-motion-fast) ease, background-color var(--mdtk-motion-fast) ease, transform var(--mdtk-motion-fast) var(--mdtk-ease-out);
+    border-radius: var(--app-radius-sm);
+    transition: color var(--app-motion-fast) ease, background-color var(--app-motion-fast) ease, transform var(--app-motion-fast) var(--app-ease-out);
 }
 
 .doc-toc-item:hover {
-    background: var(--mdtk-surface);
-    color: var(--mdtk-text);
+    background: var(--app-surface);
+    color: var(--app-text);
     transform: translateX(2px);
 }
 
-.mdtk-toast {
-    --mdtk-toast-duration: 1500ms;
+.app-toast {
+    --app-toast-duration: 1500ms;
     position: fixed;
     top: 12px;
     z-index: 9999;
     max-width: min(480px, calc(100vw - 32px));
     padding: 9px 14px;
-    border: 1px solid var(--mdtk-border);
+    border: 1px solid var(--app-border);
     border-radius: 11px;
-    background: color-mix(in srgb, var(--mdtk-surface) 94%, transparent);
-    box-shadow: 0 14px 40px var(--mdtk-shadow-color);
-    color: var(--mdtk-text);
+    background: color-mix(in srgb, var(--app-surface) 94%, transparent);
+    box-shadow: 0 14px 40px var(--app-shadow-color);
+    color: var(--app-text);
     font-size: 14px;
     line-height: 1.4;
     backdrop-filter: blur(14px);
     pointer-events: none;
-    animation: mdtk-toast-lifecycle var(--mdtk-toast-duration) var(--mdtk-ease-out) both;
+    animation: app-toast-lifecycle var(--app-toast-duration) var(--app-ease-out) both;
 }
 
 * {
-    scrollbar-color: var(--mdtk-border-strong) transparent;
+    scrollbar-color: var(--app-border-strong) transparent;
     scrollbar-width: thin;
 }
 
@@ -729,21 +729,21 @@ textarea:focus-visible,
 *::-webkit-scrollbar-thumb {
     border: 3px solid transparent;
     border-radius: 999px;
-    background: var(--mdtk-border-strong);
+    background: var(--app-border-strong);
     background-clip: padding-box;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-    background: var(--mdtk-muted);
+    background: var(--app-muted);
     background-clip: padding-box;
 }
 
-@keyframes mdtk-shell-enter {
+@keyframes app-shell-enter {
     from { opacity: 0.72; }
     to { opacity: 1; }
 }
 
-@keyframes mdtk-pop-in {
+@keyframes app-pop-in {
     from {
         opacity: 0;
         transform: translateY(-7px) scale(0.985);
@@ -754,7 +754,7 @@ textarea:focus-visible,
     }
 }
 
-@keyframes mdtk-toast-lifecycle {
+@keyframes app-toast-lifecycle {
     0% {
         opacity: 0;
         transform: translate(-50%, -8px) scale(0.98);
@@ -775,7 +775,7 @@ textarea:focus-visible,
     }
 
     :root {
-        --mdtk-rail-width: 48px;
+        --app-rail-width: 48px;
     }
 }
 

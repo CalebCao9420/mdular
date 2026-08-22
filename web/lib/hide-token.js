@@ -81,7 +81,7 @@
     ];
 
     function getHorizontalRuleMotionDuration(element) {
-        var raw = getComputedStyle(element).getPropertyValue("--mdtk-motion-slow").trim();
+        var raw = getComputedStyle(element).getPropertyValue("--app-motion-slow").trim();
         if (raw.endsWith("ms"))
             return Number.parseFloat(raw) || 320;
         if (raw.endsWith("s"))
@@ -125,10 +125,10 @@
         var text = pre.firstElementChild;
         var background = pre.parentElement && pre.parentElement.querySelector(".HyperMD-hr-bg");
         if (background)
-            background.classList.toggle("mdtk-hr-rendered", toRenderedRule);
+            background.classList.toggle("app-hr-rendered", toRenderedRule);
 
-        var wasReady = pre.dataset.mdtkHrMotionReady === "true";
-        pre.dataset.mdtkHrMotionReady = "true";
+        var wasReady = pre.dataset.appHrMotionReady === "true";
+        pre.dataset.appHrMotionReady = "true";
         // A freshly rendered CodeMirror line should appear in its settled state.
         // Only user-driven state changes animate.
         if (!wasReady || !stateChanged)

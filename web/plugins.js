@@ -107,15 +107,15 @@ async function resolvePluginIds() {
     const fromLauncher = getLauncherPlugins();
     if (fromLauncher.length > 0) {
       const normalizedLauncherIds = normalizeEnabledPluginIds(fromLauncher);
-      log("Plugins from launcher (.mdtk/config.json on disk):", normalizedLauncherIds.join(", "));
+      log(`Plugins from launcher (${WORKSPACE_CONFIG_PATH} on disk):`, normalizedLauncherIds.join(", "));
       return normalizedLauncherIds;
     }
   }
-  if (typeof loadMdtkWorkspaceConfig === "function") {
-    const cfg = await loadMdtkWorkspaceConfig(true);
+  if (typeof loadWorkspaceConfig === "function") {
+    const cfg = await loadWorkspaceConfig(true);
     const fromWorkspace = normalizeEnabledPluginIds(cfg.plugins);
     if (fromWorkspace.length > 0) {
-      log("Plugins from workspace .mdtk/config.json:", fromWorkspace.join(", "));
+      log(`Plugins from workspace ${WORKSPACE_CONFIG_PATH}:`, fromWorkspace.join(", "));
       return fromWorkspace;
     }
   }
@@ -170,7 +170,7 @@ async function loadPluginById(id) {
 async function initPlugins() {
   const ids = await resolvePluginIds();
   if (ids.length === 0) {
-    log('No plugins configured \u2014 add "plugins": ["docs", "kanban"] to .mdtk/config.json');
+    log(`No plugins configured \u2014 add "plugins": ["docs", "kanban"] to ${WORKSPACE_CONFIG_PATH}`);
   }
   for (const id of ids) {
     try {

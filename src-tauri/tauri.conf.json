@@ -1,9 +1,9 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "MD.Toolkit",
-  "mainBinaryName": "MD.Toolkit",
-  "version": "0.0.3",
-  "identifier": "com.mdtoolkit.app",
+  "productName": "mdular",
+  "mainBinaryName": "mdular",
+  "version": "../app.manifest.json",
+  "identifier": "com.issuegame.mdular",
   "build": {
     "beforeDevCommand": "npm run build",
     "beforeBuildCommand": "npm run build",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "MD Toolkit",
+        "title": "mdular",
         "width": 1280,
         "height": 900,
         "resizable": true
@@ -27,7 +27,11 @@
   "bundle": {
     "active": true,
     "createUpdaterArtifacts": true,
-    "targets": ["nsis", "dmg", "appimage"],
+    "targets": [
+      "nsis",
+      "dmg",
+      "appimage"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -36,9 +40,9 @@
       "icons/icon.ico"
     ],
     "category": "Productivity",
-    "shortDescription": "Local Markdown toolkit with Chat",
-    "longDescription": "MD Toolkit — local-first Markdown notes, project docs, and chat capture. Based on files.md with optional plugins (docs, kanban).",
-    "copyright": "Copyright © MD Toolkit",
+    "shortDescription": "A modular, local-first Markdown editor.",
+    "longDescription": "A modular, local-first Markdown editor.",
+    "copyright": "Copyright © CalebCao9420",
     "windows": {
       "webviewInstallMode": {
         "type": "downloadBootstrapper",
@@ -47,7 +51,9 @@
       "nsis": {
         "installMode": "currentUser",
         "installerIcon": "icons/icon.ico",
-        "languages": ["English"],
+        "languages": [
+          "English"
+        ],
         "displayLanguageSelector": false
       }
     }
@@ -56,7 +62,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkyRkFDMTQxRjJEMkREMjgKUldRbzNkTHlRY0g2a3VUUWdXbldKNmY0aFpQY0JVM25XOHdBYlh2Q1FaYVp3SXNSZkozTmxxY2YK",
       "endpoints": [
-        "https://github.com/CalebCao9420/files.md/releases/latest/download/latest.json"
+        "https://github.com/CalebCao9420/mdular/releases/latest/download/latest.json"
       ],
       "windows": {
         "installMode": "passive"

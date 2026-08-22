@@ -86,7 +86,7 @@ Please, reopen the folder again and check "Allow on every visit" checkbox`);
   let perf = performance.now();
   renderSidebar();
   log(`Sidebar built in: ${(performance.now() - perf).toFixed(3)} milliseconds`);
-  await loadMdtkWorkspaceConfig(true);
+  await loadWorkspaceConfig(true);
   await initPlugins();
   if (isMemFS) {
     await openFile("/?? Welcome.md");
@@ -281,7 +281,7 @@ async function openDir() {
   }
   await applyWorkspaceDirectory(dirHandle);
   renderSidebar();
-  void loadMdtkWorkspaceConfig().then(() => detectVcsRepo());
+  void loadWorkspaceConfig().then(() => detectVcsRepo());
   await initPlugins();
   await openChat();
   if (typeof refreshChatArchiveUi === "function") {
@@ -325,7 +325,7 @@ function normNewLines(text) {
 }
 function showToast(msg, ms = 1500) {
   const toast = document.createElement("div");
-  toast.className = "mdtk-toast";
+  toast.className = "app-toast";
   toast.setAttribute("role", "status");
   toast.setAttribute("aria-live", "polite");
   if (msg instanceof Node) {
@@ -337,7 +337,7 @@ function showToast(msg, ms = 1500) {
   const rect = editorContainer ? editorContainer.getBoundingClientRect() : null;
   const centerX = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
   toast.style.left = `${centerX}px`;
-  toast.style.setProperty("--mdtk-toast-duration", `${Math.max(ms, 300)}ms`);
+  toast.style.setProperty("--app-toast-duration", `${Math.max(ms, 300)}ms`);
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), ms);
 }

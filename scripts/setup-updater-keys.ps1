@@ -5,16 +5,24 @@
 #   npm run setup:updater-keys
 #   npm run setup:updater-keys -- -GitHubRepo "your-user/your-repo"
 #
-# Private key: %USERPROFILE%\.tauri\md-toolkit.key  (NEVER commit)
+# Private key: %USERPROFILE%\.tauri\<app-name>.key  (NEVER commit)
 # Public key:  written into tauri.conf.json plugins.updater.pubkey
 
 param(
-    [string]$KeyPath = (Join-Path $env:USERPROFILE ".tauri\md-toolkit.key"),
-    [string]$GitHubRepo = "CalebCao9420/files.md"
+    [string]$KeyPath = "",
+    [string]$GitHubRepo = ""
 )
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path $PSScriptRoot -Parent
+$AppManifest = Get-Content -LiteralPath (Join-Path $Root "app.manifest.json") -Raw | ConvertFrom-Json
+if (-not $KeyPath) {
+    $KeyPath = Join-Path $env:USERPROFILE ".tauri\$($AppManifest.name).key"
+}
+if (-not $GitHubRepo) {
+    $repoUri = [uri]([string]$AppManifest.repository)
+    $GitHubRepo = $repoUri.AbsolutePath.Trim('/').Replace('.git', '')
+}
 $ConfPath = Join-Path $Root "src-tauri\tauri.conf.json"
 
 if (-not (Get-Command npx -ErrorAction SilentlyContinue)) {

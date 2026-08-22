@@ -148,23 +148,23 @@ body {
     box-sizing: border-box;
 }
 
-#content.mdtk-chat-view #editor-container {
+#content.chat-view #editor-container {
     display: none !important;
 }
 
-#content.mdtk-chat-view #chat-container {
+#content.chat-view #chat-container {
     flex: none;
     min-height: 0;
     display: flex;
     flex-direction: column;
 }
 
-#content.mdtk-chat-view #chat {
+#content.chat-view #chat {
     flex: 1 1 0;
     min-height: 0;
 }
 
-#content.mdtk-chat-view #chat-input {
+#content.chat-view #chat-input {
     flex-shrink: 0;
 }
 
@@ -710,7 +710,7 @@ body.dragging * {
     max-height: 90vh;
     object-fit: contain;
     border: 1px solid var(--col-border);
-    border-radius: var(--mdtk-radius-md, 12px);
+    border-radius: var(--app-radius-md, 12px);
     box-shadow: 0 24px 72px rgba(0, 0, 0, 0.32);
     cursor: zoom-out;
     transform-origin: center center;
@@ -1211,23 +1211,23 @@ pre.HyperMD-codeblock-end {
 }
 
 /* Desktop app shell (Edge/Chrome --app= window) */
-html.mdtk-app-shell,
-html.mdtk-app-shell body {
+html.app-shell,
+html.app-shell body {
     height: 100%;
     overflow: hidden;
 }
 
-html.mdtk-app-shell body {
+html.app-shell body {
     height: 100%;
     min-height: 0;
     overscroll-behavior: none;
 }
 
-html.mdtk-app-shell #content {
+html.app-shell #content {
     height: 100%;
 }
 
-.mdtk-workspace-hint {
+.app-workspace-hint {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1240,18 +1240,18 @@ html.mdtk-app-shell #content {
     flex-shrink: 0;
 }
 
-.mdtk-workspace-hint-text code {
+.app-workspace-hint-text code {
     word-break: break-all;
     font-size: 0.8rem;
 }
 
-.mdtk-workspace-hint-actions {
+.app-workspace-hint-actions {
     display: flex;
     gap: 8px;
     flex-shrink: 0;
 }
 
-.mdtk-workspace-hint-actions button {
+.app-workspace-hint-actions button {
     padding: 5px 10px;
     border-radius: 6px;
     border: 1px solid var(--col-border);
@@ -1262,7 +1262,7 @@ html.mdtk-app-shell #content {
 }
 
 /* Tauri updater download HUD */
-.mdtk-update-overlay {
+.app-update-overlay {
     position: fixed;
     inset: 0;
     z-index: 100000;
@@ -1273,11 +1273,11 @@ html.mdtk-app-shell #content {
     backdrop-filter: blur(3px);
 }
 
-.mdtk-update-overlay[hidden] {
+.app-update-overlay[hidden] {
     display: none !important;
 }
 
-.mdtk-update-panel {
+.app-update-panel {
     width: min(440px, calc(100vw - 32px));
     padding: 22px 24px 18px;
     border-radius: 14px;
@@ -1287,37 +1287,37 @@ html.mdtk-app-shell #content {
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
 }
 
-.mdtk-update-header {
+.app-update-header {
     margin-bottom: 12px;
 }
 
-.mdtk-update-panel h2 {
+.app-update-panel h2 {
     margin: 0;
     font-size: 1.08rem;
     font-weight: 600;
 }
 
-.mdtk-update-subtitle {
+.app-update-subtitle {
     margin: 4px 0 0;
     font-size: 0.82rem;
     color: var(--col-tx-muted, #888);
 }
 
-.mdtk-update-status {
+.app-update-status {
     margin: 0 0 14px;
     font-size: 0.92rem;
     line-height: 1.5;
     color: var(--col-tx);
 }
 
-.mdtk-update-bar {
+.app-update-bar {
     height: 9px;
     border-radius: 999px;
     background: var(--col-border, #ddd);
     overflow: hidden;
 }
 
-.mdtk-update-bar-fill {
+.app-update-bar-fill {
     height: 100%;
     width: 0;
     border-radius: 999px;
@@ -1325,7 +1325,7 @@ html.mdtk-app-shell #content {
     transition: width 0.18s ease;
 }
 
-.mdtk-update-percent {
+.app-update-percent {
     margin: 8px 0 0;
     min-height: 1.1em;
     font-size: 0.82rem;
@@ -1334,14 +1334,14 @@ html.mdtk-app-shell #content {
     font-variant-numeric: tabular-nums;
 }
 
-.mdtk-update-actions {
+.app-update-actions {
     margin-top: 14px;
     display: flex;
     justify-content: flex-end;
     gap: 8px;
 }
 
-.mdtk-update-dismiss {
+.app-update-dismiss {
     padding: 6px 14px;
     border-radius: 8px;
     border: 1px solid var(--col-border);
@@ -1351,35 +1351,35 @@ html.mdtk-app-shell #content {
     font-size: 0.85rem;
 }
 
-.mdtk-update-dismiss:hover {
+.app-update-dismiss:hover {
     background: var(--col-hover, rgba(0, 0, 0, 0.04));
 }
 
-.mdtk-update-overlay--indeterminate .mdtk-update-bar-fill {
+.app-update-overlay--indeterminate .app-update-bar-fill {
     width: 38% !important;
-    animation: mdtk-update-indeterminate 1.15s ease-in-out infinite;
+    animation: app-update-indeterminate 1.15s ease-in-out infinite;
 }
 
-.mdtk-update-overlay--installing .mdtk-update-bar-fill {
-    animation: mdtk-update-pulse 1.4s ease-in-out infinite;
+.app-update-overlay--installing .app-update-bar-fill {
+    animation: app-update-pulse 1.4s ease-in-out infinite;
 }
 
-@keyframes mdtk-update-indeterminate {
+@keyframes app-update-indeterminate {
     0% { transform: translateX(-120%); }
     100% { transform: translateX(280%); }
 }
 
-@keyframes mdtk-update-pulse {
+@keyframes app-update-pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.55; }
 }
 
-.mdtk-update-overlay--error .mdtk-update-bar-fill {
+.app-update-overlay--error .app-update-bar-fill {
     background: #dc2626;
     animation: none;
     width: 0 !important;
 }
 
-.mdtk-update-overlay--error .mdtk-update-status {
+.app-update-overlay--error .app-update-status {
     color: #b91c1c;
 }

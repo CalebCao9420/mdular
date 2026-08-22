@@ -25,7 +25,7 @@ async function refreshVcsMenuContent() {
   if (!body) {
     return;
   }
-  await loadMdtkWorkspaceConfig(true);
+  await loadWorkspaceConfig(true);
   await detectVcsRepo();
   const kind = getVcsKind();
   const dirty = getDirtyPaths();
@@ -64,7 +64,7 @@ async function refreshVcsMenuContent() {
     );
   } else {
     lines.push(
-      '<p class="vcs-menu-hint">\u5728 <code>.mdtk/config.json</code> \u6DFB\u52A0 <code>workspacePath</code>\uFF08\u672C\u673A\u7EDD\u5BF9\u8DEF\u5F84\uFF09\uFF0C\u5373\u53EF\u4E00\u952E\u590D\u5236\u8DEF\u5F84\u4E0E git \u547D\u4EE4\u3002</p>'
+      `<p class="vcs-menu-hint">\u5728 <code>${WORKSPACE_CONFIG_PATH}</code> \u6DFB\u52A0 <code>workspacePath</code>\uFF08\u672C\u673A\u7EDD\u5BF9\u8DEF\u5F84\uFF09\uFF0C\u5373\u53EF\u4E00\u952E\u590D\u5236\u8DEF\u5F84\u4E0E git \u547D\u4EE4\u3002</p>`
     );
   }
   body.innerHTML = lines.join("");

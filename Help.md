@@ -1,4 +1,4 @@
-# MD Toolkit
+# mdular
 
 Local-first markdown workspace. Your notes stay as plain `.md` files on disk.
 
@@ -10,15 +10,15 @@ Local-first markdown workspace. Your notes stay as plain `.md` files on disk.
 
 3. Press **Ctrl+Enter** to open **Chat** — quick capture for ideas and tasks.
 
-4. Optional: install as PWA from the browser menu (*Install MD Toolkit*).
+4. Optional: install as PWA from the browser menu (*Install mdular*).
 
-5. Optional plugins: add `.mdtk/config.json` in your workspace (see below).
+5. Optional plugins: add `.mdular/config.json` in your workspace (see below).
 
 Without a bound folder, data may live in browser storage only (not recommended).
 
 ## Plugins
 
-Enable plugins with `.mdtk/config.json`:
+Enable plugins with `.mdular/config.json`:
 
 ```json
 {

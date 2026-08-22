@@ -1,0 +1,18 @@
+[[permission]]
+identifier = "allow-workspace-io"
+description = "Workspace path and file IO invoke commands."
+commands.allow = [
+  "workspace_get_path",
+  "workspace_list_files",
+  "workspace_exists",
+  "workspace_is_dir",
+  "workspace_read_file",
+  "workspace_read_file_base64",
+  "workspace_write_file",
+  "workspace_write_file_base64",
+  "workspace_file_mtime",
+  "workspace_ensure_parent_dirs",
+  "workspace_create_dir",
+  "workspace_delete_file",
+  "workspace_remove_dir",
+]

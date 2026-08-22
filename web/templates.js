@@ -1,6 +1,6 @@
 // Generated from src/ — edit TypeScript and run: npm run build
 
-const TEMPLATE_PREF_KEY = "mdToolkitDefaultTemplate";
+const TEMPLATE_PREF_KEY = appStorageKey("default-template");
 function getSavedTemplateChoice() {
   const value = localStorage.getItem(TEMPLATE_PREF_KEY);
   return value === "plain" || value === "frontmatter" ? value : null;

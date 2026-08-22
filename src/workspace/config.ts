@@ -1,6 +1,6 @@
 /// <reference path="../types/global.d.ts" />
 
-interface MdtkWorkspaceConfig {
+interface AppWorkspaceConfig {
   /** Plugin folder names under `web/plugins/` (same as `src/plugins/<id>/`). */
   plugins?: string[];
   /** 本机绝对路径，供复制到 SourceGit / Explorer（浏览器无法自动读取 Open folder 路径） */
@@ -10,9 +10,7 @@ interface MdtkWorkspaceConfig {
   };
 }
 
-const MDTK_CONFIG_PATH = '/.mdtk/config.json';
-
-let cachedMdtkConfig: MdtkWorkspaceConfig | null = null;
+let cachedWorkspaceConfig: AppWorkspaceConfig | null = null;
 
 function normalizeWorkspacePluginIds(plugins: unknown): string[] {
   if (!Array.isArray(plugins)) {
@@ -26,33 +24,32 @@ function normalizeWorkspacePluginIds(plugins: unknown): string[] {
     .map((id) => id.trim());
 }
 
-async function loadMdtkWorkspaceConfig(forceReload = false): Promise<MdtkWorkspaceConfig> {
-  if (cachedMdtkConfig && !forceReload) {
-    return cachedMdtkConfig;
+async function loadWorkspaceConfig(forceReload = false): Promise<AppWorkspaceConfig> {
+  if (cachedWorkspaceConfig && !forceReload) {
+    return cachedWorkspaceConfig;
   }
   try {
-    const text = await read(MDTK_CONFIG_PATH);
-    const parsed = JSON.parse(text) as MdtkWorkspaceConfig;
-    cachedMdtkConfig = parsed && typeof parsed === 'object' ? parsed : {};
-    if (cachedMdtkConfig.plugins) {
-      cachedMdtkConfig.plugins = normalizeWorkspacePluginIds(cachedMdtkConfig.plugins);
+    const text = await read(WORKSPACE_CONFIG_PATH);
+    const parsed = JSON.parse(text) as AppWorkspaceConfig;
+    cachedWorkspaceConfig = parsed && typeof parsed === 'object' ? parsed : {};
+    if (cachedWorkspaceConfig.plugins) {
+      cachedWorkspaceConfig.plugins = normalizeWorkspacePluginIds(cachedWorkspaceConfig.plugins);
     }
   } catch (err) {
-    cachedMdtkConfig = {};
+    cachedWorkspaceConfig = {};
     log(
-      'No readable .mdtk/config.json in workspace (plugins list unavailable from disk).',
+      `No readable ${WORKSPACE_CONFIG_PATH} in workspace (plugins list unavailable from disk).`,
       err && (err as Error).message ? (err as Error).message : err
     );
   }
-  return cachedMdtkConfig;
+  return cachedWorkspaceConfig;
 }
 
 function getWorkspacePath(): string {
-  return (cachedMdtkConfig?.workspacePath || '').trim();
+  return (cachedWorkspaceConfig?.workspacePath || '').trim();
 }
 
 Object.assign(globalThis, {
-  loadMdtkWorkspaceConfig,
+  loadWorkspaceConfig,
   getWorkspacePath,
-  MDTK_CONFIG_PATH,
 });

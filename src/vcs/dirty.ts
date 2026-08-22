@@ -95,7 +95,7 @@ function hookEditorDirty(cm: CodeMirrorEditor): void {
 
 function initVcsDirty(): void {
   vcsStatusEl = document.getElementById('vcs-status');
-  void loadMdtkWorkspaceConfig().then(() => detectVcsRepo()).then(() => updateVcsStatusUI());
+  void loadWorkspaceConfig().then(() => detectVcsRepo()).then(() => updateVcsStatusUI());
 
   if (typeof editor !== 'undefined' && editor) {
     hookEditorDirty(editor);

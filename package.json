@@ -1,5 +1,6 @@
 {
-  "name": "mdular",
+  "name": "workspace-root",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -8,19 +9,21 @@
     "plugins/official/*"
   ],
   "scripts": {
-    "build": "node scripts/build.mjs",
-    "watch": "node scripts/build.mjs --watch",
+    "build": "node scripts/sync-app-metadata.mjs && node scripts/build.mjs",
+    "watch": "node scripts/sync-app-metadata.mjs && node scripts/build.mjs --watch",
+    "sync:app-metadata": "node scripts/sync-app-metadata.mjs",
+    "check:app-metadata": "node scripts/sync-app-metadata.mjs --check",
     "typecheck": "tsc --noEmit",
     "typecheck:v2": "tsc -p tsconfig.v2.json",
     "check:static-assets": "node scripts/check-static-assets.mjs",
     "check:architecture": "node scripts/check-v2-boundaries.mjs",
     "test:architecture": "node --test scripts/tests/check-v2-boundaries.test.mjs",
     "test:v2": "node --test scripts/tests/v2-core-plugin.test.mjs",
-    "check": "npm run typecheck && npm run typecheck:v2 && npm run check:static-assets && npm run test:architecture && npm run test:v2 && npm run check:architecture",
-    "tauri": "tauri",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
-    "tauri:icon": "tauri icon src-tauri/icons/icon.png -o src-tauri/icons",
+    "check": "npm run check:app-metadata && npm run typecheck && npm run typecheck:v2 && npm run check:static-assets && npm run test:architecture && npm run test:v2 && npm run check:architecture",
+    "tauri": "node scripts/sync-app-metadata.mjs && tauri",
+    "tauri:dev": "node scripts/sync-app-metadata.mjs && tauri dev",
+    "tauri:build": "node scripts/sync-app-metadata.mjs && tauri build",
+    "tauri:icon": "node scripts/sync-app-metadata.mjs && tauri icon src-tauri/icons/icon.png -o src-tauri/icons",
     "setup:tauri-nsis": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-tauri-nsis.ps1",
     "setup:updater-keys": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-updater-keys.ps1",
     "generate:latest-json": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-latest-json.ps1"

@@ -54,19 +54,19 @@ class TauriFileHandle {
 
   async getFile(): Promise<File> {
     const name = this.relativePath.split('/').pop() || 'file';
-    const mtime = await tauriInvoke<number>('mdtk_file_mtime', {
+    const mtime = await tauriInvoke<number>('workspace_file_mtime', {
       relativePath: this.relativePath,
     }).catch(() => Date.now());
 
     if (isTauriMediaRelativePath(this.relativePath)) {
-      const b64 = await tauriInvoke<string>('mdtk_read_file_base64', {
+      const b64 = await tauriInvoke<string>('workspace_read_file_base64', {
         relativePath: this.relativePath,
       });
       const bytes = base64ToBytes(b64);
       return new File([bytes], name, { lastModified: mtime });
     }
 
-    const text = await tauriInvoke<string>('mdtk_read_file', { relativePath: this.relativePath });
+    const text = await tauriInvoke<string>('workspace_read_file', { relativePath: this.relativePath });
     return new File([text], name, { type: 'text/plain', lastModified: mtime });
   }
 
@@ -79,10 +79,10 @@ class TauriFileHandle {
     if (options?.keepExistingData) {
       try {
         if (isMedia) {
-          const b64 = await tauriInvoke<string>('mdtk_read_file_base64', { relativePath: rel });
+          const b64 = await tauriInvoke<string>('workspace_read_file_base64', { relativePath: rel });
           binaryChunks.push(base64ToBytes(b64));
         } else {
-          textBuffer = await tauriInvoke<string>('mdtk_read_file', { relativePath: rel });
+          textBuffer = await tauriInvoke<string>('workspace_read_file', { relativePath: rel });
         }
       } catch {
         // new file
@@ -116,41 +116,41 @@ class TauriFileHandle {
             merged.set(chunk, offset);
             offset += chunk.length;
           }
-          await tauriInvoke('mdtk_write_file_base64', {
+          await tauriInvoke('workspace_write_file_base64', {
             relativePath: rel,
             contentBase64: bytesToBase64(merged),
           });
           return;
         }
-        await tauriInvoke('mdtk_write_file', { relativePath: rel, content: textBuffer });
+        await tauriInvoke('workspace_write_file', { relativePath: rel, content: textBuffer });
       },
     };
   }
 
   async remove(): Promise<void> {
-    await tauriInvoke('mdtk_delete_file', { relativePath: this.relativePath });
+    await tauriInvoke('workspace_delete_file', { relativePath: this.relativePath });
   }
 }
 
 async function tauriGetFileHandle(appPath: string, create = false): Promise<TauriFileHandle> {
   const relativePath = appPathToRelative(appPath);
   if (create) {
-    await tauriInvoke('mdtk_ensure_parent_dirs', { relativePath });
-    const exists = await tauriInvoke<boolean>('mdtk_exists', { relativePath });
+    await tauriInvoke('workspace_ensure_parent_dirs', { relativePath });
+    const exists = await tauriInvoke<boolean>('workspace_exists', { relativePath });
     if (!exists) {
       if (isTauriMediaRelativePath(relativePath)) {
-        await tauriInvoke('mdtk_write_file_base64', {
+        await tauriInvoke('workspace_write_file_base64', {
           relativePath,
           contentBase64: '',
         });
       } else {
-        await tauriInvoke('mdtk_write_file', { relativePath, content: '' });
+        await tauriInvoke('workspace_write_file', { relativePath, content: '' });
       }
     }
     return new TauriFileHandle(relativePath);
   }
 
-  const exists = await tauriInvoke<boolean>('mdtk_exists', { relativePath });
+  const exists = await tauriInvoke<boolean>('workspace_exists', { relativePath });
   if (!exists) {
     const err = new Error('Not found');
     (err as Error & { name: string }).name = 'NotFoundError';
@@ -160,21 +160,21 @@ async function tauriGetFileHandle(appPath: string, create = false): Promise<Taur
 }
 
 async function tauriListWorkspaceFiles(): Promise<TauriListedFile[]> {
-  return tauriInvoke<TauriListedFile[]>('mdtk_list_files');
+  return tauriInvoke<TauriListedFile[]>('workspace_list_files');
 }
 
 async function tauriCreateDir(appDirPath: string): Promise<void> {
   const relativePath = appPathToRelative(appDirPath);
-  await tauriInvoke('mdtk_create_dir', { relativePath });
+  await tauriInvoke('workspace_create_dir', { relativePath });
 }
 
 async function tauriRemoveDir(appDirPath: string): Promise<void> {
   const relativePath = appPathToRelative(trimPrefix(appDirPath, '/'));
-  await tauriInvoke('mdtk_remove_dir', { relativePath });
+  await tauriInvoke('workspace_remove_dir', { relativePath });
 }
 
 async function tauriPathIsDir(relativePath: string): Promise<boolean> {
-  return tauriInvoke<boolean>('mdtk_is_dir', { relativePath });
+  return tauriInvoke<boolean>('workspace_is_dir', { relativePath });
 }
 
 Object.assign(globalThis, {

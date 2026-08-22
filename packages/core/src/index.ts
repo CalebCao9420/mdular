@@ -1,5 +1,5 @@
 /**
- * Host-neutral invariants shared by every mdular shell.
+ * Host-neutral invariants shared by every application shell.
  *
  * This package deliberately has no DOM, Tauri, Node.js, Godot, or Unity types.
  */

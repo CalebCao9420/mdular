@@ -10,6 +10,18 @@ $ErrorActionPreference = "Stop"
 
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Web = Join-Path $Root "web"
+$AppManifest = Get-Content -LiteralPath (Join-Path $Root "app.manifest.json") -Raw | ConvertFrom-Json
+$AppName = [string]$AppManifest.name
+$AppWorkspaceConfigPath = ".{0}\config.json" -f $AppName
+$AppEnvironmentPrefix = ($AppName -replace '[^A-Za-z0-9]', '_').ToUpperInvariant()
+
+function Get-AppEnvironmentName([string]$Suffix) {
+    return "${AppEnvironmentPrefix}_${Suffix}"
+}
+
+function Get-AppEnvironmentValue([string]$Suffix) {
+    return [Environment]::GetEnvironmentVariable((Get-AppEnvironmentName $Suffix))
+}
 
 # Rust/cargo (rustup) — not always on PATH in fresh PowerShell sessions
 $cargoBin = Join-Path $env:USERPROFILE ".cargo\bin"
@@ -28,7 +40,7 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
     }
   }
   foreach ($candidate in @(
-      $env:MD_TOOLKIT_NODE_DIR,
+      (Get-AppEnvironmentValue "NODE_DIR"),
       (Join-Path $env:ProgramFiles "nodejs"),
       (Join-Path ${env:ProgramFiles(x86)} "nodejs"),
       "D:\Client\Environment\NodeJs"
@@ -43,15 +55,17 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
   }
 }
 if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
-  Write-Error "npm not found. Add your Node.js folder (containing npm.cmd) to PATH, or set MD_TOOLKIT_NODE_DIR."
+  $nodeDirectoryVariable = Get-AppEnvironmentName "NODE_DIR"
+  Write-Error "npm not found. Add your Node.js folder (containing npm.cmd) to PATH, or set $nodeDirectoryVariable."
 }
 $DefaultPort = 8765
-$Port = if ($env:MD_TOOLKIT_PORT) { [int]$env:MD_TOOLKIT_PORT } else { $DefaultPort }
+$ConfiguredPort = Get-AppEnvironmentValue "PORT"
+$Port = if ($ConfiguredPort) { [int]$ConfiguredPort } else { $DefaultPort }
 
-if ($env:MD_TOOLKIT_PORTABLE -eq "1") {
+if ((Get-AppEnvironmentValue "PORTABLE") -eq "1") {
     $StateDir = Join-Path $Root "data"
 } else {
-    $StateDir = Join-Path $env:LOCALAPPDATA "MDToolkit"
+    $StateDir = Join-Path $env:LOCALAPPDATA $AppName
 }
 $StateFile = Join-Path $StateDir "server.json"
 $HintFile = Join-Path $Web ".launcher-hint.json"
@@ -85,10 +99,10 @@ function Save-ServerState([int]$ActivePort, [int]$ProcessId) {
     } | ConvertTo-Json | Set-Content -Path $StateFile -Encoding UTF8
 }
 
-function Test-ToolkitServer([int]$TestPort) {
+function Test-AppServer([int]$TestPort) {
     try {
         $response = Invoke-WebRequest -Uri "http://localhost:$TestPort/config.js" -UseBasicParsing -TimeoutSec 1
-        return $response.Content -match "MD Toolkit"
+        return $response.Content -match ([regex]::Escape($AppName))
     } catch {
         return $false
     }
@@ -103,13 +117,14 @@ function Get-ListeningPortOwner([int]$TestPort) {
     }
 }
 
-function Start-ToolkitServer([int]$ListenPort) {
+function Start-AppServer([int]$ListenPort) {
     $listener = Get-ListeningPortOwner $ListenPort
     if ($null -ne $listener) {
-        if (Test-ToolkitServer $ListenPort) {
+        if (Test-AppServer $ListenPort) {
             return $ListenPort
         }
-        Write-Warning "Port $ListenPort is in use by another program. Set MD_TOOLKIT_PORT to use a different port."
+        $portVariable = Get-AppEnvironmentName "PORT"
+        Write-Warning "Port $ListenPort is in use by another program. Set $portVariable to use a different port."
         exit 1
     }
 
@@ -120,16 +135,16 @@ function Start-ToolkitServer([int]$ListenPort) {
         -PassThru
 
     $deadline = (Get-Date).AddSeconds(8)
-    while (-not (Test-ToolkitServer $ListenPort) -and (Get-Date) -lt $deadline) {
+    while (-not (Test-AppServer $ListenPort) -and (Get-Date) -lt $deadline) {
         if ($process.HasExited) {
             Write-Error "Python http.server exited before becoming ready (port $ListenPort)."
         }
         Start-Sleep -Milliseconds 200
     }
 
-    if (-not (Test-ToolkitServer $ListenPort)) {
+    if (-not (Test-AppServer $ListenPort)) {
         Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-        Write-Error "Timed out waiting for MD Toolkit on port $ListenPort."
+        Write-Error "Timed out waiting for $AppName on port $ListenPort."
     }
 
     Save-ServerState $ListenPort $process.Id
@@ -151,7 +166,7 @@ function Read-WorkspacePluginIds([string]$WorkspacePath) {
     if (-not $WorkspacePath) {
         return @()
     }
-    $cfgPath = Join-Path $WorkspacePath ".mdtk\config.json"
+    $cfgPath = Join-Path $WorkspacePath $AppWorkspaceConfigPath
     if (-not (Test-Path -LiteralPath $cfgPath)) {
         return @()
     }
@@ -202,7 +217,7 @@ function Get-AppBrowserPath {
     return $null
 }
 
-function Open-ToolkitWindow([string]$Url, [bool]$AsAppWindow) {
+function Open-AppWindow([string]$Url, [bool]$AsAppWindow) {
     if ($AsAppWindow) {
         $browser = Get-AppBrowserPath
         if ($browser) {
@@ -267,7 +282,7 @@ if ($TauriBuild) {
             & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $setupScript
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         }
-        Write-Host "Building MD Toolkit installer (Release + NSIS)..."
+        Write-Host "Building $AppName installer (Release + NSIS)..."
         Write-Host "This may take several minutes on first run."
         npm run tauri:build
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -277,7 +292,7 @@ if ($TauriBuild) {
             Write-Host "Installer output:" -ForegroundColor Green
             Get-ChildItem $bundleDir -Filter "*.exe" | ForEach-Object { Write-Host "  $($_.FullName)" }
         }
-        $releaseExe = Join-Path $Root "src-tauri\target\release\MD.Toolkit.exe"
+        $releaseExe = Join-Path $Root "src-tauri\target\release\${AppName}.exe"
         if (Test-Path $releaseExe) {
             Write-Host "Portable exe:" -ForegroundColor Green
             Write-Host "  $releaseExe"
@@ -305,7 +320,11 @@ if ($Tauri) {
         }
     }
     if ($folderPath) {
-        $env:MDTK_WORKSPACE = $folderPath
+        [Environment]::SetEnvironmentVariable(
+            (Get-AppEnvironmentName "WORKSPACE"),
+            $folderPath,
+            [EnvironmentVariableTarget]::Process
+        )
         Write-LauncherHint $folderPath $true
     } else {
         Write-LauncherHint "" $true
@@ -323,15 +342,15 @@ if ($Tauri) {
 $activePort = $Port
 $state = Get-ServerState
 
-if ($null -ne $state -and $state.port -and (Test-ToolkitServer ([int]$state.port))) {
+if ($null -ne $state -and $state.port -and (Test-AppServer ([int]$state.port))) {
     $proc = Get-Process -Id ([int]$state.pid) -ErrorAction SilentlyContinue
     if ($null -ne $proc -and -not $proc.HasExited) {
         $activePort = [int]$state.port
     }
 }
 
-if (-not (Test-ToolkitServer $activePort)) {
-    $activePort = Start-ToolkitServer $Port
+if (-not (Test-AppServer $activePort)) {
+    $activePort = Start-AppServer $Port
 }
 
 $query = @()
@@ -342,4 +361,4 @@ if ($query.Count -gt 0) {
     $url += "?" + ($query -join "&")
 }
 
-Open-ToolkitWindow $url $shellFlag
+Open-AppWindow $url $shellFlag

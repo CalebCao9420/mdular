@@ -5,20 +5,27 @@
 #
 # Upload to Release assets:
 #   latest.json
-#   MD.Toolkit_1.0.1_x64-setup.exe
-#   MD.Toolkit_1.0.1_x64-setup.exe.sig
+#   <app-name>_1.0.1_x64-setup.exe
+#   <app-name>_1.0.1_x64-setup.exe.sig
 
 param(
-    [Parameter(Mandatory = $true)]
-    [string]$Version,
+    [string]$Version = "",
     [string]$Notes = "",
-    [string]$Repo = "CalebCao9420/files.md",
+    [string]$Repo = "",
     [string]$BundleDir = "",
     [string]$AssetName = ""
 )
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path $PSScriptRoot -Parent
+$AppManifest = Get-Content -LiteralPath (Join-Path $Root "app.manifest.json") -Raw | ConvertFrom-Json
+if (-not $Version) {
+    $Version = [string]$AppManifest.version
+}
+if (-not $Repo) {
+    $repoUri = [uri]([string]$AppManifest.repository)
+    $Repo = $repoUri.AbsolutePath.Trim('/').Replace('.git', '')
+}
 if (-not $BundleDir) {
     $BundleDir = Join-Path $Root "src-tauri\target\release\bundle\nsis"
 }

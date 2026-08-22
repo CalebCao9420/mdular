@@ -1,6 +1,6 @@
-# Files.md - Files Structure
+# mdular - Workspace Structure
 
-This document describes the file structure of a Files.md knowledge base.
+This document describes the file structure of a mdular workspace.
 All files are plain Markdown (.md) stored locally.
 
 ## Directory Layout

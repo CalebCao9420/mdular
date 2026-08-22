@@ -11,7 +11,7 @@ function packageManifest(name, exports = { '.': './src/index.ts' }) {
 }
 
 function checkFixture(files) {
-  const fixtureRoot = mkdtempSync(join(tmpdir(), 'files-md-v2-boundaries-'));
+  const fixtureRoot = mkdtempSync(join(tmpdir(), 'v2-boundaries-'));
   try {
     for (const [relativePath, content] of Object.entries(files)) {
       const filePath = resolve(fixtureRoot, relativePath);

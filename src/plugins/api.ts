@@ -27,7 +27,7 @@ interface PluginViewController {
   close: () => void;
 }
 
-interface MdToolkitPlugin {
+interface AppPlugin {
   manifest: PluginManifest;
   init: (api: PluginAPI) => void | Promise<void>;
   destroy?: () => void;
@@ -43,15 +43,15 @@ interface PluginAPI {
   onEscape(handler: () => boolean): void;
 }
 
-const pluginRegistry = new Map<string, MdToolkitPlugin>();
-const activePlugins: MdToolkitPlugin[] = [];
+const pluginRegistry = new Map<string, AppPlugin>();
+const activePlugins: AppPlugin[] = [];
 const pluginViews: PluginViewController[] = [];
 const pluginEscapeHandlers: Array<() => boolean> = [];
 const pluginShortcuts: PluginKeyboardShortcut[] = [];
 
 const loadedPluginIds = new Set<string>();
 
-function registerPlugin(plugin: MdToolkitPlugin): void {
+function registerPlugin(plugin: AppPlugin): void {
   pluginRegistry.set(plugin.manifest.id, plugin);
 }
 
@@ -168,16 +168,16 @@ async function resolvePluginIds(): Promise<string[]> {
     const fromLauncher = getLauncherPlugins();
     if (fromLauncher.length > 0) {
       const normalizedLauncherIds = normalizeEnabledPluginIds(fromLauncher);
-      log('Plugins from launcher (.mdtk/config.json on disk):', normalizedLauncherIds.join(', '));
+      log(`Plugins from launcher (${WORKSPACE_CONFIG_PATH} on disk):`, normalizedLauncherIds.join(', '));
       return normalizedLauncherIds;
     }
   }
 
-  if (typeof loadMdtkWorkspaceConfig === 'function') {
-    const cfg = await loadMdtkWorkspaceConfig(true);
+  if (typeof loadWorkspaceConfig === 'function') {
+    const cfg = await loadWorkspaceConfig(true);
     const fromWorkspace = normalizeEnabledPluginIds(cfg.plugins);
     if (fromWorkspace.length > 0) {
-      log('Plugins from workspace .mdtk/config.json:', fromWorkspace.join(', '));
+      log(`Plugins from workspace ${WORKSPACE_CONFIG_PATH}:`, fromWorkspace.join(', '));
       return fromWorkspace;
     }
   }
@@ -244,7 +244,7 @@ async function loadPluginById(id: string): Promise<void> {
 async function initPlugins(): Promise<void> {
   const ids = await resolvePluginIds();
   if (ids.length === 0) {
-    log('No plugins configured — add "plugins": ["docs", "kanban"] to .mdtk/config.json');
+    log(`No plugins configured — add "plugins": ["docs", "kanban"] to ${WORKSPACE_CONFIG_PATH}`);
   }
 
   for (const id of ids) {

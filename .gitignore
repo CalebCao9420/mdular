@@ -12,7 +12,10 @@ fslog/
 data/
 web/.launcher-hint.json
 
-# Machine-specific workspace config (copy from .mdtk/config.example.json)
+# Machine-specific workspace config (see docs/examples/workspace-config.json)
+# app-metadata: workspace-config
+.mdular/config.json
+# Legacy local config from the previous application identity (never commit)
 .mdtk/config.json
 
 # User-generated workspace content (do not publish)

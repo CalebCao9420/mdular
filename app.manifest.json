@@ -1,0 +1,9 @@
+{
+  "name": "mdular",
+  "version": "0.0.3",
+  "identifier": "com.issuegame.mdular",
+  "description": "A modular, local-first Markdown editor.",
+  "author": "CalebCao9420",
+  "license": "MIT",
+  "repository": "https://github.com/CalebCao9420/mdular"
+}

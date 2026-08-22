@@ -13,6 +13,24 @@ struct AppState {
     workspace_path: Mutex<Option<PathBuf>>,
 }
 
+fn app_environment_variable_name(suffix: &str) -> String {
+    let prefix: String = env!("CARGO_PKG_NAME")
+        .chars()
+        .map(|character| {
+            if character.is_ascii_alphanumeric() {
+                character.to_ascii_uppercase()
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    format!("{prefix}_{suffix}")
+}
+
+fn app_environment_value(suffix: &str) -> Option<String> {
+    std::env::var(app_environment_variable_name(suffix)).ok()
+}
+
 #[derive(Serialize)]
 struct ListedFile {
     relative_path: String,
@@ -121,7 +139,12 @@ fn workspace_root(state: &State<AppState>) -> Result<PathBuf, String> {
         .lock()
         .map_err(|e| e.to_string())?
         .clone()
-        .ok_or_else(|| "No workspace bound (set MDTK_WORKSPACE or -Folder)".to_string())
+        .ok_or_else(|| {
+            format!(
+                "No workspace bound (set {} or -Folder)",
+                app_environment_variable_name("WORKSPACE")
+            )
+        })
 }
 
 fn resolve_write_path(root: &Path, relative_path: &str) -> Result<PathBuf, String> {
@@ -198,7 +221,7 @@ fn walk_workspace_files(
 
         // Do not follow links or Windows reparse points while walking. Without
         // this guard, a linked directory inside a workspace could expose files
-        // from anywhere on disk through mdtk_list_files.
+        // from anywhere on disk through workspace_list_files.
         if metadata_is_link_or_reparse(&metadata) {
             continue;
         }
@@ -224,7 +247,7 @@ fn walk_workspace_files(
 }
 
 #[tauri::command]
-fn mdtk_get_workspace_path(state: State<AppState>) -> Option<String> {
+fn workspace_get_path(state: State<AppState>) -> Option<String> {
     state
         .workspace_path
         .lock()
@@ -233,7 +256,7 @@ fn mdtk_get_workspace_path(state: State<AppState>) -> Option<String> {
 }
 
 #[tauri::command]
-fn mdtk_list_files(state: State<AppState>) -> Result<Vec<ListedFile>, String> {
+fn workspace_list_files(state: State<AppState>) -> Result<Vec<ListedFile>, String> {
     let root = workspace_root(&state)?;
     let root = canonical_workspace_root(&root)?;
     let mut files = Vec::new();
@@ -243,28 +266,31 @@ fn mdtk_list_files(state: State<AppState>) -> Result<Vec<ListedFile>, String> {
 }
 
 #[tauri::command]
-fn mdtk_exists(state: State<AppState>, relative_path: String) -> Result<bool, String> {
+fn workspace_exists(state: State<AppState>, relative_path: String) -> Result<bool, String> {
     let root = workspace_root(&state)?;
     let path = resolve_write_path(&root, &relative_path)?;
     Ok(path.exists())
 }
 
 #[tauri::command]
-fn mdtk_is_dir(state: State<AppState>, relative_path: String) -> Result<bool, String> {
+fn workspace_is_dir(state: State<AppState>, relative_path: String) -> Result<bool, String> {
     let root = workspace_root(&state)?;
     let path = resolve_write_path(&root, &relative_path)?;
     Ok(path.is_dir())
 }
 
 #[tauri::command]
-fn mdtk_read_file(state: State<AppState>, relative_path: String) -> Result<String, String> {
+fn workspace_read_file(state: State<AppState>, relative_path: String) -> Result<String, String> {
     let root = workspace_root(&state)?;
     let path = resolve_in_workspace(&root, &relative_path)?;
     std::fs::read_to_string(&path).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn mdtk_read_file_base64(state: State<AppState>, relative_path: String) -> Result<String, String> {
+fn workspace_read_file_base64(
+    state: State<AppState>,
+    relative_path: String,
+) -> Result<String, String> {
     let root = workspace_root(&state)?;
     let path = resolve_in_workspace(&root, &relative_path)?;
     let bytes = std::fs::read(&path).map_err(|e| e.to_string())?;
@@ -272,7 +298,7 @@ fn mdtk_read_file_base64(state: State<AppState>, relative_path: String) -> Resul
 }
 
 #[tauri::command]
-fn mdtk_write_file(
+fn workspace_write_file(
     state: State<AppState>,
     relative_path: String,
     content: String,
@@ -286,7 +312,7 @@ fn mdtk_write_file(
 }
 
 #[tauri::command]
-fn mdtk_write_file_base64(
+fn workspace_write_file_base64(
     state: State<AppState>,
     relative_path: String,
     content_base64: String,
@@ -303,14 +329,17 @@ fn mdtk_write_file_base64(
 }
 
 #[tauri::command]
-fn mdtk_file_mtime(state: State<AppState>, relative_path: String) -> Result<u64, String> {
+fn workspace_file_mtime(state: State<AppState>, relative_path: String) -> Result<u64, String> {
     let root = workspace_root(&state)?;
     let path = resolve_in_workspace(&root, &relative_path)?;
     Ok(file_modified_ms(&path))
 }
 
 #[tauri::command]
-fn mdtk_ensure_parent_dirs(state: State<AppState>, relative_path: String) -> Result<(), String> {
+fn workspace_ensure_parent_dirs(
+    state: State<AppState>,
+    relative_path: String,
+) -> Result<(), String> {
     let root = workspace_root(&state)?;
     let path = resolve_write_path(&root, &relative_path)?;
     if let Some(parent) = path.parent() {
@@ -320,14 +349,14 @@ fn mdtk_ensure_parent_dirs(state: State<AppState>, relative_path: String) -> Res
 }
 
 #[tauri::command]
-fn mdtk_create_dir(state: State<AppState>, relative_path: String) -> Result<(), String> {
+fn workspace_create_dir(state: State<AppState>, relative_path: String) -> Result<(), String> {
     let root = workspace_root(&state)?;
     let path = resolve_write_path(&root, &relative_path)?;
     std::fs::create_dir_all(&path).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn mdtk_delete_file(state: State<AppState>, relative_path: String) -> Result<(), String> {
+fn workspace_delete_file(state: State<AppState>, relative_path: String) -> Result<(), String> {
     let root = workspace_root(&state)?;
     let path = resolve_in_workspace(&root, &relative_path)?;
     if path.is_dir() {
@@ -337,7 +366,7 @@ fn mdtk_delete_file(state: State<AppState>, relative_path: String) -> Result<(),
 }
 
 #[tauri::command]
-fn mdtk_remove_dir(state: State<AppState>, relative_path: String) -> Result<(), String> {
+fn workspace_remove_dir(state: State<AppState>, relative_path: String) -> Result<(), String> {
     let root = workspace_root(&state)?;
     let path = resolve_in_workspace(&root, &relative_path)?;
     if !path.is_dir() {
@@ -397,7 +426,7 @@ fn workspace_from_cli() -> Option<PathBuf> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let workspace_path = workspace_from_cli()
-        .or_else(|| std::env::var("MDTK_WORKSPACE").ok().map(PathBuf::from))
+        .or_else(|| app_environment_value("WORKSPACE").map(PathBuf::from))
         .filter(|p| p.is_dir());
 
     tauri::Builder::default()
@@ -419,19 +448,19 @@ pub fn run() {
         })
         .on_window_event(|window, event| tray::on_window_event(window, event))
         .invoke_handler(tauri::generate_handler![
-            mdtk_get_workspace_path,
-            mdtk_list_files,
-            mdtk_exists,
-            mdtk_is_dir,
-            mdtk_read_file,
-            mdtk_read_file_base64,
-            mdtk_write_file,
-            mdtk_write_file_base64,
-            mdtk_file_mtime,
-            mdtk_ensure_parent_dirs,
-            mdtk_create_dir,
-            mdtk_delete_file,
-            mdtk_remove_dir,
+            workspace_get_path,
+            workspace_list_files,
+            workspace_exists,
+            workspace_is_dir,
+            workspace_read_file,
+            workspace_read_file_base64,
+            workspace_write_file,
+            workspace_write_file_base64,
+            workspace_file_mtime,
+            workspace_ensure_parent_dirs,
+            workspace_create_dir,
+            workspace_delete_file,
+            workspace_remove_dir,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

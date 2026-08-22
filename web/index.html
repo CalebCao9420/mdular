@@ -8,59 +8,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#E9E9E3" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#121715" media="(prefers-color-scheme: dark)">
-    <meta name="description" content="Local-first markdown notes, project docs, and chat capture.">
-    <meta name="application-name" content="MD Toolkit">
+    <meta name="description" content="A modular, local-first Markdown editor.">
+    <meta name="application-name" content="mdular">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="MD Toolkit">
-    <title>MD Toolkit</title>
+    <meta name="apple-mobile-web-app-title" content="mdular">
+    <title>mdular</title>
     <link rel="icon" href="favicon.ico">
     <link rel="apple-touch-icon" href="img/icon.png">
     <link rel="manifest" href="manifest.json">
-    <link href="app.css?v=1786636502608" rel="stylesheet">
-    <link href="lib/normalize.css?v=1786636502608" rel="stylesheet">
-    <link href="lib/sidebar.css?v=1786636502608" rel="stylesheet">
-    <link href="lib/codemirror.css?v=1786636502608" rel="stylesheet">
-    <link href="lib/hypermd.css?v=1786636502608" rel="stylesheet">
-    <link href="lib/theme-brutal.css?v=1786636502608" rel="stylesheet">
-    <link href="lib/theme-brutal-dark.css?v=1786636502608" rel="stylesheet">
-    <link href="chat.css?v=1786636502608" rel="stylesheet">
-    <link href="reading.css?v=1786636502608" rel="stylesheet">
-    <link href="lib/theme-studio.css?v=1786636502608" rel="stylesheet">
-    <link href="lib/latex/katex.min.css?v=1786636502608" rel="stylesheet">
-    <script src="build-stamp.js?v=1786636502608"></script>
-    <script src="lib/latex/katex.min.js?v=1786636502608"></script>
-    <script src="lib/sidebar.js?v=1786636502608"></script>
-    <script src="lib/codemirror.js?v=1786636502608"></script>
-    <script src="lib/core.js?v=1786636502608"></script>
-    <script src="lib/markdown.js?v=1786636502608"></script>
-    <script src="lib/hypermd.js?v=1786636502608"></script>
-    <script src="lib/keymap.js?v=1786636502608"></script>
-    <script src="lib/click.js?v=1786636502608"></script>
-    <script src="lib/hide-token.js?v=1786636502608"></script>
-    <script src="lib/fold.js?v=1786636502608"></script>
-    <script src="lib/fold-image.js?v=1786636502608"></script>
-    <script src="lib/fold-link.js?v=1786636502608"></script>
-    <script src="lib/fold-code.js?v=1786636502608"></script>
-    <script src="lib/latex/fold-math.js?v=1786636502608"></script>
-    <script src="lib/hypermd-mermaid.js?v=1786636502608"></script>
-    <script src="lib/table-align.js?v=1786636502608"></script>
-    <script src="lib/autocomplete-link.js?v=1786636502608"></script>
-    <script src="lib/show-hint.js?v=1786636502608"></script>
-    <script src="lib/autoscroll.js?v=1786636502608"></script>
-    <script src="lib/codemirror-go.js?v=1786636502608"></script>
-    <script src="lib/codemirror-python.js?v=1786636502608"></script>
-    <script src="lib/codemirror-javascript.js?v=1786636502608"></script>
-    <script src="lib/codemirror-php.js?v=1786636502608"></script>
-    <script src="lib/codemirror-shell.js?v=1786636502608"></script>
-    <script src="lib/similarity.js?v=1786636502608"></script>
-    <script src="lib/emoji.js?v=1786636502608"></script>
-    <script src="config.js?v=1786636502608"></script>
-    <script src="desktop-shell.js?v=1786636502608"></script>
-    <script src="tauri-fs.js?v=1786636502608"></script>
-    <script src="lib/fs.js?v=1786636502608"></script>
-    <script src="lib/md.js?v=1786636502608"></script>
-    <script src="welcome.js?v=1786636502608"></script>
-    <script src="files.js?v=1786636502608"></script>
+    <link href="app.css?v=8183bf8440b0" rel="stylesheet">
+    <link href="lib/normalize.css?v=8183bf8440b0" rel="stylesheet">
+    <link href="lib/sidebar.css?v=8183bf8440b0" rel="stylesheet">
+    <link href="lib/codemirror.css?v=8183bf8440b0" rel="stylesheet">
+    <link href="lib/hypermd.css?v=8183bf8440b0" rel="stylesheet">
+    <link href="lib/theme-brutal.css?v=8183bf8440b0" rel="stylesheet">
+    <link href="lib/theme-brutal-dark.css?v=8183bf8440b0" rel="stylesheet">
+    <link href="chat.css?v=8183bf8440b0" rel="stylesheet">
+    <link href="reading.css?v=8183bf8440b0" rel="stylesheet">
+    <link href="lib/theme-studio.css?v=8183bf8440b0" rel="stylesheet">
+    <link href="lib/latex/katex.min.css?v=8183bf8440b0" rel="stylesheet">
+    <script src="build-stamp.js?v=8183bf8440b0"></script>
+    <script src="lib/latex/katex.min.js?v=8183bf8440b0"></script>
+    <script src="lib/sidebar.js?v=8183bf8440b0"></script>
+    <script src="lib/codemirror.js?v=8183bf8440b0"></script>
+    <script src="lib/core.js?v=8183bf8440b0"></script>
+    <script src="lib/markdown.js?v=8183bf8440b0"></script>
+    <script src="lib/hypermd.js?v=8183bf8440b0"></script>
+    <script src="lib/keymap.js?v=8183bf8440b0"></script>
+    <script src="lib/click.js?v=8183bf8440b0"></script>
+    <script src="lib/hide-token.js?v=8183bf8440b0"></script>
+    <script src="lib/fold.js?v=8183bf8440b0"></script>
+    <script src="lib/fold-image.js?v=8183bf8440b0"></script>
+    <script src="lib/fold-link.js?v=8183bf8440b0"></script>
+    <script src="lib/fold-code.js?v=8183bf8440b0"></script>
+    <script src="lib/latex/fold-math.js?v=8183bf8440b0"></script>
+    <script src="lib/hypermd-mermaid.js?v=8183bf8440b0"></script>
+    <script src="lib/table-align.js?v=8183bf8440b0"></script>
+    <script src="lib/autocomplete-link.js?v=8183bf8440b0"></script>
+    <script src="lib/show-hint.js?v=8183bf8440b0"></script>
+    <script src="lib/autoscroll.js?v=8183bf8440b0"></script>
+    <script src="lib/codemirror-go.js?v=8183bf8440b0"></script>
+    <script src="lib/codemirror-python.js?v=8183bf8440b0"></script>
+    <script src="lib/codemirror-javascript.js?v=8183bf8440b0"></script>
+    <script src="lib/codemirror-php.js?v=8183bf8440b0"></script>
+    <script src="lib/codemirror-shell.js?v=8183bf8440b0"></script>
+    <script src="lib/similarity.js?v=8183bf8440b0"></script>
+    <script src="lib/emoji.js?v=8183bf8440b0"></script>
+    <script src="config.js?v=8183bf8440b0"></script>
+    <script src="desktop-shell.js?v=8183bf8440b0"></script>
+    <script src="tauri-fs.js?v=8183bf8440b0"></script>
+    <script src="lib/fs.js?v=8183bf8440b0"></script>
+    <script src="lib/md.js?v=8183bf8440b0"></script>
+    <script src="welcome.js?v=8183bf8440b0"></script>
+    <script src="files.js?v=8183bf8440b0"></script>
     <!-- mermaid.min.js is lazy-loaded on first ```mermaid encounter -->
 </head>
 <body>
@@ -223,25 +223,25 @@
         <div id="vcs-menu-body" class="vcs-menu-body"></div>
     </div>
 </div>
-<script src="reading-parse.js?v=1786636502608"></script>
-<script src="reading.js?v=1786636502608"></script>
-<script src="templates.js?v=1786636502608"></script>
-<script src="plugins/kanban/default-seeds.js?v=1786636502608"></script>
-<script src="project-structure.js?v=1786636502608"></script>
-<script src="search.js?v=1786636502608"></script>
-<script src="mdtk-workspace-config.js?v=1786636502608"></script>
-<script src="plugins/chat-archive.js?v=1786636502608"></script>
-<script src="chat.js?v=1786636502608"></script>
-<script src="plugins.js?v=1786636502608"></script>
-<script src="vcs-repo.js?v=1786636502608"></script>
-<script src="vcs-menu.js?v=1786636502608"></script>
-<script src="vcs-dirty.js?v=1786636502608"></script>
-<script src="editor.js?v=1786636502608"></script>
-<script src="app.js?v=1786636502608"></script>
-<script src="modals.js?v=1786636502608"></script>
+<script src="reading-parse.js?v=8183bf8440b0"></script>
+<script src="reading.js?v=8183bf8440b0"></script>
+<script src="templates.js?v=8183bf8440b0"></script>
+<script src="plugins/kanban/default-seeds.js?v=8183bf8440b0"></script>
+<script src="project-structure.js?v=8183bf8440b0"></script>
+<script src="search.js?v=8183bf8440b0"></script>
+<script src="workspace-config.js?v=8183bf8440b0"></script>
+<script src="plugins/chat-archive.js?v=8183bf8440b0"></script>
+<script src="chat.js?v=8183bf8440b0"></script>
+<script src="plugins.js?v=8183bf8440b0"></script>
+<script src="vcs-repo.js?v=8183bf8440b0"></script>
+<script src="vcs-menu.js?v=8183bf8440b0"></script>
+<script src="vcs-dirty.js?v=8183bf8440b0"></script>
+<script src="editor.js?v=8183bf8440b0"></script>
+<script src="app.js?v=8183bf8440b0"></script>
+<script src="modals.js?v=8183bf8440b0"></script>
 <script>
     if (!window.COMMIT_HASH) {
-        window.COMMIT_HASH = '?v=1786636502608';
+        window.COMMIT_HASH = '?v=8183bf8440b0';
     }
     log('Current version:', window.COMMIT_HASH);
 

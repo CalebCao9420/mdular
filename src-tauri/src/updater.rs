@@ -1,6 +1,6 @@
 use serde::Serialize;
-use tauri::{AppHandle, Emitter, Manager};
 use tauri::window::{ProgressBarState, ProgressBarStatus};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use tauri_plugin_updater::UpdaterExt;
 
@@ -37,7 +37,7 @@ pub fn schedule_startup_check(app: &AppHandle) {
     tauri::async_runtime::spawn(async move {
         std::thread::sleep(std::time::Duration::from_secs(4));
         if let Err(err) = check_for_updates(app, UpdatePrompt::OnAvailable).await {
-            eprintln!("md-toolkit updater: {err}");
+            eprintln!("{} updater: {err}", env!("CARGO_PKG_NAME"));
         }
     });
 }
@@ -46,7 +46,7 @@ pub fn check_updates_from_tray(app: &AppHandle) {
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
         if let Err(err) = check_for_updates(app, UpdatePrompt::AlwaysNotify).await {
-            eprintln!("md-toolkit updater: {err}");
+            eprintln!("{} updater: {err}", env!("CARGO_PKG_NAME"));
         }
     });
 }
@@ -201,7 +201,7 @@ fn push_hud(app: &AppHandle, payload: HudPayload) {
         return;
     };
     let js = format!(
-        "try{{globalThis.__mdtkUpdateHud?.({json});}}catch(e){{console.error('mdtk update hud',e);}}"
+        "try{{globalThis.__appUpdateHud?.({json});}}catch(e){{console.error('app update hud',e);}}"
     );
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.eval(&js);

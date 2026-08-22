@@ -2,6 +2,9 @@
 
 type CodeMirrorEditor = any;
 
+declare const __APP_NAME__: string;
+declare const __APP_WORKSPACE_CONFIG_PATH__: string;
+
 declare var editor: CodeMirrorEditor;
 declare var editor2: CodeMirrorEditor;
 declare var currentEditor: CodeMirrorEditor | null;
@@ -13,6 +16,8 @@ declare var isLoadingLocalFiles: boolean;
 
 declare function log(...args: unknown[]): void;
 declare function logError(...args: unknown[]): void;
+declare function getAppHelpIntro(): string;
+declare function appStorageKey(key: string): string;
 
 declare function parseFrontmatter(text: string): {
   meta: Record<string, string> | null;
@@ -80,7 +85,7 @@ declare function openKanban(): Promise<void>;
 declare function toggleKanban(): void;
 declare function refreshKanban(): Promise<void>;
 
-declare function registerPlugin(plugin: MdToolkitPlugin): void;
+declare function registerPlugin(plugin: AppPlugin): void;
 declare function initPlugins(): Promise<void>;
 declare function closePluginViews(): void;
 declare function handlePluginEscape(): boolean;
@@ -145,7 +150,7 @@ interface PluginAPI {
   onEscape(handler: () => boolean): void;
 }
 
-interface MdToolkitPlugin {
+interface AppPlugin {
   manifest: PluginManifest;
   init: (api: PluginAPI) => void | Promise<void>;
   destroy?: () => void;
@@ -195,12 +200,12 @@ declare function getVcsKind(): VcsKind;
 declare function isGitRepo(): boolean;
 declare function detectGitRepo(): Promise<boolean>;
 
-interface MdtkWorkspaceConfig {
+interface AppWorkspaceConfig {
   plugins?: string[];
   workspacePath?: string;
   vcs?: { prefer?: 'explorer' | 'sourcegit' | 'tortoisegit' };
 }
-declare function loadMdtkWorkspaceConfig(forceReload?: boolean): Promise<MdtkWorkspaceConfig>;
+declare function loadWorkspaceConfig(forceReload?: boolean): Promise<AppWorkspaceConfig>;
 declare function getWorkspacePath(): string;
 
 declare function initVcsMenu(): void;

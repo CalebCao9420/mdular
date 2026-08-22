@@ -33,7 +33,7 @@ async function refreshVcsMenuContent(): Promise<void> {
     return;
   }
 
-  await loadMdtkWorkspaceConfig(true);
+  await loadWorkspaceConfig(true);
   await detectVcsRepo();
 
   const kind = getVcsKind();
@@ -76,7 +76,7 @@ async function refreshVcsMenuContent(): Promise<void> {
     );
   } else {
     lines.push(
-      '<p class="vcs-menu-hint">在 <code>.mdtk/config.json</code> 添加 <code>workspacePath</code>（本机绝对路径），即可一键复制路径与 git 命令。</p>'
+      `<p class="vcs-menu-hint">在 <code>${WORKSPACE_CONFIG_PATH}</code> 添加 <code>workspacePath</code>（本机绝对路径），即可一键复制路径与 git 命令。</p>`
     );
   }
 

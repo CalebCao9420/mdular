@@ -76,7 +76,7 @@ function getChatViewportSize() {
 
 function fitChatLayout() {
     const content = document.getElementById('content');
-    if (!content || !content.classList.contains('mdtk-chat-view')) {
+    if (!content || !content.classList.contains('chat-view')) {
         return;
     }
     const box = document.getElementById('chat-container');
@@ -106,7 +106,7 @@ function showChatView() {
     const content = document.getElementById('content');
     const editorContainer = document.getElementById('editor-container');
     if (content) {
-        content.classList.add('mdtk-chat-view');
+        content.classList.add('chat-view');
     }
     if (editorContainer) {
         editorContainer.style.display = 'none';
@@ -122,7 +122,7 @@ function hideChatView() {
     const content = document.getElementById('content');
     const editorContainer = document.getElementById('editor-container');
     if (content) {
-        content.classList.remove('mdtk-chat-view');
+        content.classList.remove('chat-view');
     }
     if (editorContainer) {
         editorContainer.style.display = '';

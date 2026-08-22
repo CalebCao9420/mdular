@@ -3,10 +3,12 @@
 interface LauncherHint {
   workspacePath?: string;
   shell?: boolean;
-  /** Plugin folder names under web/plugins/, from .mdtk/config.json (launcher reads disk). */
+  /** Plugin folder names under web/plugins/, from the workspace config file. */
   plugins?: string[];
   at?: string;
 }
+
+const WORKSPACE_HINT_DISMISSED_KEY = appStorageKey('workspace-hint-dismissed');
 
 let launcherWorkspacePath = '';
 let launcherPluginIds: string[] = [];
@@ -35,30 +37,30 @@ async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Prom
 
 function applyAppShellMode(shell: boolean): void {
   if (shell) {
-    document.documentElement.classList.add('mdtk-app-shell');
+    document.documentElement.classList.add('app-shell');
   }
 }
 
 function removeWorkspaceHintBanner(): void {
-  document.getElementById('mdtk-workspace-hint')?.remove();
+  document.getElementById('app-workspace-hint')?.remove();
 }
 
 function showWorkspaceHintBanner(path: string): void {
-  if (!path || sessionStorage.getItem('mdtkWorkspaceHintDismissed') === path) {
+  if (!path || sessionStorage.getItem(WORKSPACE_HINT_DISMISSED_KEY) === path) {
     return;
   }
-  if (document.getElementById('mdtk-workspace-hint')) {
+  if (document.getElementById('app-workspace-hint')) {
     return;
   }
 
   const banner = document.createElement('div');
-  banner.id = 'mdtk-workspace-hint';
-  banner.className = 'mdtk-workspace-hint';
+  banner.id = 'app-workspace-hint';
+  banner.className = 'app-workspace-hint';
   banner.innerHTML =
-    '<span class="mdtk-workspace-hint-text">启动器指定文件夹：<code></code></span>' +
-    '<div class="mdtk-workspace-hint-actions">' +
-    '<button type="button" id="mdtk-workspace-hint-open">打开文件夹</button>' +
-    '<button type="button" id="mdtk-workspace-hint-dismiss">知道了</button>' +
+    '<span class="app-workspace-hint-text">启动器指定文件夹：<code></code></span>' +
+    '<div class="app-workspace-hint-actions">' +
+    '<button type="button" id="app-workspace-hint-open">打开文件夹</button>' +
+    '<button type="button" id="app-workspace-hint-dismiss">知道了</button>' +
     '</div>';
 
   const code = banner.querySelector('code');
@@ -73,11 +75,11 @@ function showWorkspaceHintBanner(path: string): void {
     document.body.prepend(banner);
   }
 
-  document.getElementById('mdtk-workspace-hint-open')?.addEventListener('click', () => {
+  document.getElementById('app-workspace-hint-open')?.addEventListener('click', () => {
     void openDir();
   });
-  document.getElementById('mdtk-workspace-hint-dismiss')?.addEventListener('click', () => {
-    sessionStorage.setItem('mdtkWorkspaceHintDismissed', path);
+  document.getElementById('app-workspace-hint-dismiss')?.addEventListener('click', () => {
+    sessionStorage.setItem(WORKSPACE_HINT_DISMISSED_KEY, path);
     removeWorkspaceHintBanner();
   });
 }
@@ -132,10 +134,10 @@ async function initTauriShell(hint: LauncherHint | null): Promise<boolean> {
   let path = (hint?.workspacePath || '').trim();
   if (!path) {
     try {
-      const fromRust = await tauriInvoke<string | null>('mdtk_get_workspace_path');
+      const fromRust = await tauriInvoke<string | null>('workspace_get_path');
       path = (fromRust || '').trim();
     } catch {
-      // MDTK_WORKSPACE not set in Rust
+      // No workspace was supplied by the desktop host.
     }
   }
 
@@ -207,27 +209,27 @@ function ensureUpdateDownloadHud(): UpdateHudController {
       return;
     }
     overlay = document.createElement('div');
-    overlay.id = 'mdtk-update-overlay';
-    overlay.className = 'mdtk-update-overlay';
+    overlay.id = 'app-update-overlay';
+    overlay.className = 'app-update-overlay';
     overlay.hidden = true;
     overlay.innerHTML =
-      '<div class="mdtk-update-panel" role="dialog" aria-labelledby="mdtk-update-title" aria-live="polite">' +
-      '<div class="mdtk-update-header">' +
-      '<h2 id="mdtk-update-title">软件更新</h2>' +
-      '<p class="mdtk-update-subtitle"></p>' +
+      '<div class="app-update-panel" role="dialog" aria-labelledby="app-update-title" aria-live="polite">' +
+      '<div class="app-update-header">' +
+      '<h2 id="app-update-title">软件更新</h2>' +
+      '<p class="app-update-subtitle"></p>' +
       '</div>' +
-      '<p class="mdtk-update-status"></p>' +
-      '<div class="mdtk-update-bar" aria-hidden="true"><div class="mdtk-update-bar-fill"></div></div>' +
-      '<p class="mdtk-update-percent"></p>' +
-      '<div class="mdtk-update-actions"></div>' +
+      '<p class="app-update-status"></p>' +
+      '<div class="app-update-bar" aria-hidden="true"><div class="app-update-bar-fill"></div></div>' +
+      '<p class="app-update-percent"></p>' +
+      '<div class="app-update-actions"></div>' +
       '</div>';
     document.body.appendChild(overlay);
-    statusEl = overlay.querySelector('.mdtk-update-status');
-    barFill = overlay.querySelector('.mdtk-update-bar-fill');
-    titleEl = overlay.querySelector('#mdtk-update-title');
-    subtitleEl = overlay.querySelector('.mdtk-update-subtitle');
-    percentEl = overlay.querySelector('.mdtk-update-percent');
-    actionsEl = overlay.querySelector('.mdtk-update-actions');
+    statusEl = overlay.querySelector('.app-update-status');
+    barFill = overlay.querySelector('.app-update-bar-fill');
+    titleEl = overlay.querySelector('#app-update-title');
+    subtitleEl = overlay.querySelector('.app-update-subtitle');
+    percentEl = overlay.querySelector('.app-update-percent');
+    actionsEl = overlay.querySelector('.app-update-actions');
   };
 
   const setActions = (html: string): void => {
@@ -243,7 +245,7 @@ function ensureUpdateDownloadHud(): UpdateHudController {
     }
     clearHideTimer();
     overlay.hidden = false;
-    overlay.classList.remove('mdtk-update-overlay--error');
+    overlay.classList.remove('app-update-overlay--error');
   };
 
   const hideOverlay = (): void => {
@@ -251,9 +253,9 @@ function ensureUpdateDownloadHud(): UpdateHudController {
     if (overlay) {
       overlay.hidden = true;
       overlay.classList.remove(
-        'mdtk-update-overlay--error',
-        'mdtk-update-overlay--indeterminate',
-        'mdtk-update-overlay--installing',
+        'app-update-overlay--error',
+        'app-update-overlay--indeterminate',
+        'app-update-overlay--installing',
       );
     }
     setActions('');
@@ -281,15 +283,15 @@ function ensureUpdateDownloadHud(): UpdateHudController {
       percentEl.textContent =
         opts?.indeterminate || opts?.installing ? '' : percent > 0 ? `${percent}%` : '';
     }
-    overlay?.classList.toggle('mdtk-update-overlay--indeterminate', !!opts?.indeterminate);
-    overlay?.classList.toggle('mdtk-update-overlay--installing', !!opts?.installing);
+    overlay?.classList.toggle('app-update-overlay--indeterminate', !!opts?.indeterminate);
+    overlay?.classList.toggle('app-update-overlay--installing', !!opts?.installing);
     setActions('');
   };
 
   const showError = (message: string): void => {
     showOverlay();
-    overlay?.classList.add('mdtk-update-overlay--error');
-    overlay?.classList.remove('mdtk-update-overlay--indeterminate', 'mdtk-update-overlay--installing');
+    overlay?.classList.add('app-update-overlay--error');
+    overlay?.classList.remove('app-update-overlay--indeterminate', 'app-update-overlay--installing');
     if (titleEl) {
       titleEl.textContent = '更新失败';
     }
@@ -305,8 +307,8 @@ function ensureUpdateDownloadHud(): UpdateHudController {
     if (percentEl) {
       percentEl.textContent = '';
     }
-    setActions('<button type="button" class="mdtk-update-dismiss">关闭</button>');
-    actionsEl?.querySelector('.mdtk-update-dismiss')?.addEventListener('click', hideOverlay, {
+    setActions('<button type="button" class="app-update-dismiss">关闭</button>');
+    actionsEl?.querySelector('.app-update-dismiss')?.addEventListener('click', hideOverlay, {
       once: true,
     });
     clearHideTimer();
@@ -342,7 +344,7 @@ function handleUpdateHudPayload(payload: UpdateHudPayload): void {
   }
 }
 
-function __mdtkUpdateHud(payload: UpdateHudPayload): void {
+function __appUpdateHud(payload: UpdateHudPayload): void {
   handleUpdateHudPayload(payload);
 }
 
@@ -424,5 +426,5 @@ Object.assign(globalThis, {
   isTauriHost,
   tauriInvoke,
   removeWorkspaceHintBanner,
-  __mdtkUpdateHud,
+  __appUpdateHud,
 });

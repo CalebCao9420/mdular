@@ -11,7 +11,7 @@
 }
 
 .tree-container {
-	--tree-motion: var(--mdtk-motion-slow, 320ms);
+	--tree-motion: var(--app-motion-slow, 320ms);
 	--tree-ease-open: cubic-bezier(0.22, 0.78, 0.24, 1);
 	/* Exact time-reverse of --tree-ease-open. */
 	--tree-ease-close: cubic-bezier(0.76, 0, 0.78, 0.22);

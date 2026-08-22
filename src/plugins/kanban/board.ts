@@ -16,10 +16,10 @@ interface TaskCard {
 }
 
 const KANBAN_TASK_DIRS = ['/issues'];
-const KANBAN_STORAGE_KEY = 'mdToolkitKanbanOpen';
-const KANBAN_LAYOUT_KEY = 'mdToolkitTicketLayout';
-const KANBAN_FILTER_KEY = 'mdToolkitKanbanFilter';
-const KANBAN_FILTER_PRESETS_KEY = 'mdToolkitKanbanFilterPresets';
+const KANBAN_STORAGE_KEY = appStorageKey('kanban-open');
+const KANBAN_LAYOUT_KEY = appStorageKey('ticket-layout');
+const KANBAN_FILTER_KEY = appStorageKey('kanban-filter');
+const KANBAN_FILTER_PRESETS_KEY = appStorageKey('kanban-filter-presets');
 
 interface KanbanFilter {
   assignee: string;

@@ -27,9 +27,16 @@ pub fn hide_main_window(app: &AppHandle) {
 }
 
 pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    let app_name = app.package_info().name.clone();
     let show_i = MenuItem::with_id(app, MENU_SHOW, "显示主窗口", true, None::<&str>)?;
     let hide_i = MenuItem::with_id(app, MENU_HIDE, "隐藏到托盘", true, None::<&str>)?;
-    let about_i = MenuItem::with_id(app, MENU_ABOUT, "关于 MD Toolkit", true, None::<&str>)?;
+    let about_i = MenuItem::with_id(
+        app,
+        MENU_ABOUT,
+        format!("关于 {app_name}"),
+        true,
+        None::<&str>,
+    )?;
     let update_i = MenuItem::with_id(app, MENU_UPDATE, "检查更新", true, None::<&str>)?;
     let open_install_i =
         MenuItem::with_id(app, MENU_OPEN_INSTALL, "打开安装目录", true, None::<&str>)?;
@@ -57,7 +64,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 
     TrayIconBuilder::new()
         .icon(icon)
-        .tooltip("MD Toolkit")
+        .tooltip(app_name)
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
@@ -94,13 +101,13 @@ pub fn on_window_event(window: &tauri::Window, event: &WindowEvent) {
 }
 
 fn show_about(app: &AppHandle) {
-    let version = app.package_info().version.to_string();
-    let message = format!(
-        "MD Toolkit\n版本 {version}\n\n本地优先的 Markdown 工具箱（基于 files.md）。"
-    );
+    let package_info = app.package_info();
+    let app_name = &package_info.name;
+    let version = &package_info.version;
+    let message = format!("{app_name}\n版本 {version}\n\n模块化、本地优先的 Markdown 编辑器。");
     app.dialog()
         .message(message)
-        .title("关于 MD Toolkit")
+        .title(format!("关于 {app_name}"))
         .kind(MessageDialogKind::Info)
         .buttons(MessageDialogButtons::Ok)
         .show(|_| {});
@@ -161,7 +168,7 @@ fn open_path_in_file_manager(path: &std::path::Path) -> Result<(), String> {
 fn show_error(app: &AppHandle, message: &str) {
     app.dialog()
         .message(message)
-        .title("MD Toolkit")
+        .title(app.package_info().name.clone())
         .kind(MessageDialogKind::Error)
         .buttons(MessageDialogButtons::Ok)
         .show(|_| {});

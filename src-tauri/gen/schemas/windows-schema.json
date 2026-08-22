@@ -387,10 +387,10 @@
       "description": "Permission identifier",
       "oneOf": [
         {
-          "description": "MD Toolkit workspace path and file IO invoke commands.",
+          "description": "Workspace path and file IO invoke commands.",
           "type": "string",
-          "const": "allow-mdtk-workspace",
-          "markdownDescription": "MD Toolkit workspace path and file IO invoke commands."
+          "const": "allow-workspace-io",
+          "markdownDescription": "Workspace path and file IO invoke commands."
         },
         {
           "description": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`",

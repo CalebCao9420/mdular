@@ -1,7 +1,7 @@
 // Generated from src/ — edit TypeScript and run: npm run build
 
-const READ_MODE_STORAGE_KEY = "mdToolkitReadMode";
-const OUTLINE_COLLAPSED_KEY = "mdToolkitOutlineCollapsed";
+const READ_MODE_STORAGE_KEY = appStorageKey("read-mode");
+const OUTLINE_COLLAPSED_KEY = appStorageKey("outline-collapsed");
 const TOC_SKIP_PATHS = /* @__PURE__ */ new Set(["/Chat.md"]);
 let readModeEnabled = localStorage.getItem(READ_MODE_STORAGE_KEY) === "true";
 let outlineCollapsed = localStorage.getItem(OUTLINE_COLLAPSED_KEY) === "true";

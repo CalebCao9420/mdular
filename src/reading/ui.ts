@@ -4,8 +4,8 @@
 // Reading: outline (TOC), frontmatter meta, read-only mode.
 // parseFrontmatter / parseHeadings live in reading-parse.js (built from src/reading/parse.ts).
 
-const READ_MODE_STORAGE_KEY = 'mdToolkitReadMode';
-const OUTLINE_COLLAPSED_KEY = 'mdToolkitOutlineCollapsed';
+const READ_MODE_STORAGE_KEY = appStorageKey('read-mode');
+const OUTLINE_COLLAPSED_KEY = appStorageKey('outline-collapsed');
 const TOC_SKIP_PATHS = new Set(['/Chat.md']);
 
 let readModeEnabled = localStorage.getItem(READ_MODE_STORAGE_KEY) === 'true';

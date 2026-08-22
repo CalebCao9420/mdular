@@ -2,7 +2,7 @@
 
 type DocumentTemplate = 'plain' | 'frontmatter';
 
-const TEMPLATE_PREF_KEY = 'mdToolkitDefaultTemplate';
+const TEMPLATE_PREF_KEY = appStorageKey('default-template');
 
 function getSavedTemplateChoice(): DocumentTemplate | null {
   const value = localStorage.getItem(TEMPLATE_PREF_KEY);
