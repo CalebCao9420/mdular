@@ -1,9 +1,9 @@
-# MD Toolkit · v1
+# mdular · v1
 
 > **致谢**  
-> 本项目是在 **[files.md](https://github.com/zakirullin/files.md)**（作者 [zakirullin](https://github.com/zakirullin)）之上的**二次封装与扩展**，并非从零重写。侧边栏浏览、Markdown 编辑/阅读等核心体验与交互思路，均来自原作者的出色工作；在此向原作者致以诚挚谢意。若无 [files.md](https://github.com/zakirullin/files.md)，便不会有 MD Toolkit。
+> **mdular** 起源于 **[files.md](https://github.com/zakirullin/files.md)**（作者 [Artem Zakirullin](https://github.com/zakirullin)）之上的二次封装与扩展，并非从零重写。侧边栏浏览、Markdown 编辑/阅读等核心体验与交互思路，均来自原作者的出色工作；在此向原作者致以诚挚谢意。若无 [files.md](https://github.com/zakirullin/files.md)，便不会有 mdular。
 
-基于 [files.md](https://github.com/zakirullin/files.md) 的本地 Markdown 工具箱：**浏览/编辑 + Chat（Core）** + 可选插件（Docs 归档、工单看板）；Git/SVN 外挂。
+mdular 当前可运行的 v1 是一个本地 Markdown 工具箱：**浏览/编辑 + Chat（Core）** + 可选插件（Docs 归档、工单看板）；Git/SVN 外挂。
 
 `src/` → `npm run build` → `web/` · 本地 HTTP · 无云同步
 
@@ -93,6 +93,7 @@ launch.ps1 · start.bat · start-tauri.bat · build-tauri-installer.bat
 
 ---
 
-## 其它
+## 来源与许可
 
-个人 fork，不向上游 PR。MIT。
+mdular 现已脱离 GitHub fork network，作为独立项目继续演进。项目采用 MIT License；
+[LICENSE](LICENSE) 同时保留上游作者 Artem Zakirullin 与 mdular 修改者的版权声明。

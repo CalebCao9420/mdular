@@ -1,13 +1,22 @@
 {
-  "name": "md-toolkit",
+  "name": "mdular",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "plugins/official/*"
+  ],
   "scripts": {
     "build": "node scripts/build.mjs",
     "watch": "node scripts/build.mjs --watch",
     "typecheck": "tsc --noEmit",
+    "typecheck:v2": "tsc -p tsconfig.v2.json",
     "check:static-assets": "node scripts/check-static-assets.mjs",
-    "check": "npm run typecheck && npm run check:static-assets",
+    "check:architecture": "node scripts/check-v2-boundaries.mjs",
+    "test:architecture": "node --test scripts/tests/check-v2-boundaries.test.mjs",
+    "test:v2": "node --test scripts/tests/v2-core-plugin.test.mjs",
+    "check": "npm run typecheck && npm run typecheck:v2 && npm run check:static-assets && npm run test:architecture && npm run test:v2 && npm run check:architecture",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",

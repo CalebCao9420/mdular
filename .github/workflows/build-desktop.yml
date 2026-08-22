@@ -1,20 +1,15 @@
-# Build desktop installers via GitHub-hosted runners (no local Mac/Linux required).
+# Build and collect every supported desktop installer on GitHub-hosted runners.
 #
-# Trigger: Actions → "Build Desktop" → Run workflow
-# Or: push a tag like v0.0.4
+# Trigger: Actions -> "Build Desktop" -> Run workflow
+# Or: push a version tag such as v0.0.4.
 #
-# Jobs:
-#   - macOS: Apple Silicon + Intel → .dmg
-#   - Linux: x64 → .AppImage
+# Outputs in one draft GitHub Release:
+#   - Windows x64 -> NSIS installer
+#   - macOS Apple Silicon + Intel -> DMG installers
+#   - Linux x64 -> AppImage
 #
-# Unsigned by default.
-# - Do NOT set empty APPLE_* secrets (breaks macOS codesign import).
-# - src-tauri/tauri.ci.json disables updater signing artifacts.
-#
-# Later (optional):
-#   APPLE_CERTIFICATE / APPLE_CERTIFICATE_PASSWORD / APPLE_SIGNING_IDENTITY
-#   APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID
-#   TAURI_SIGNING_PRIVATE_KEY (+ drop --config tauri.ci.json for updater .sig)
+# Windows and macOS bundles are unsigned by default. The CI override also
+# disables Tauri updater artifacts until release signing is configured.
 
 name: Build Desktop
 
@@ -25,20 +20,13 @@ on:
       - 'v*'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  build-macos:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: aarch64-apple-darwin
-            arch: apple-silicon
-          - target: x86_64-apple-darwin
-            arch: intel
-
-    runs-on: macos-latest
+  check:
+    name: npm check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -50,45 +38,51 @@ jobs:
           node-version: lts/*
           cache: npm
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: './src-tauri -> target'
-          key: macos-${{ matrix.target }}
-
-      - name: Install frontend dependencies
+      - name: Install dependencies
         run: npm ci
 
-      - name: Build Tauri (macOS ${{ matrix.arch }})
-        uses: tauri-apps/tauri-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: v__VERSION__
-          releaseName: MD Toolkit v__VERSION__
-          releaseBody: |
-            Desktop builds for this version.
+      - name: Run repository checks
+        run: npm run check
 
-            - **Windows**: build locally (`build-tauri-installer.bat`) → NSIS `MD.Toolkit_*_x64-setup.exe`
-            - **macOS**: `.dmg` (Apple Silicon / Intel). Unsigned CI — first open may need right-click → Open.
-            - **Linux**: `.AppImage` (x64). `chmod +x` then run.
-          releaseDraft: true
-          prerelease: false
-          args: --target ${{ matrix.target }} --config src-tauri/tauri.ci.json
+  build:
+    name: ${{ matrix.label }}
+    needs: check
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 60
+    permissions:
+      contents: write
 
-  build-linux:
-    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Windows x64 (NSIS)
+            platform: windows-latest
+            rust_target: ''
+            cache_key: windows-x64
+            args: --config src-tauri/tauri.ci.json --bundles nsis
+          - label: macOS Apple Silicon (DMG)
+            platform: macos-latest
+            rust_target: aarch64-apple-darwin
+            cache_key: macos-apple-silicon
+            args: --target aarch64-apple-darwin --config src-tauri/tauri.ci.json --bundles dmg
+          - label: macOS Intel (DMG)
+            platform: macos-latest
+            rust_target: x86_64-apple-darwin
+            cache_key: macos-intel
+            args: --target x86_64-apple-darwin --config src-tauri/tauri.ci.json --bundles dmg
+          - label: Linux x64 (AppImage)
+            platform: ubuntu-22.04
+            rust_target: ''
+            cache_key: linux-x64
+            args: --config src-tauri/tauri.ci.json --bundles appimage
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Install Linux dependencies (WebKitGTK / AppImage)
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -107,30 +101,31 @@ jobs:
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
-          key: linux-x86_64
+          key: ${{ matrix.cache_key }}
 
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build Tauri (Linux AppImage)
+      - name: Build and upload ${{ matrix.label }}
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: v__VERSION__
-          releaseName: MD Toolkit v__VERSION__
+          releaseName: mdular v__VERSION__
           releaseBody: |
             Desktop builds for this version.
 
-            - **Windows**: build locally (`build-tauri-installer.bat`) → NSIS `MD.Toolkit_*_x64-setup.exe`
-            - **macOS**: `.dmg` (Apple Silicon / Intel). Unsigned CI — first open may need right-click → Open.
-            - **Linux**: `.AppImage` (x64). `chmod +x` then run.
+            - **Windows**: x64 NSIS installer (`.exe`). Unsigned; Windows SmartScreen may warn.
+            - **macOS**: DMG for Apple Silicon and Intel. Unsigned; first open may require right-click -> Open.
+            - **Linux**: x64 AppImage. Run `chmod +x` before launching.
           releaseDraft: true
           prerelease: false
-          # Limit to AppImage on Linux (deb/rpm optional later)
-          args: --config src-tauri/tauri.ci.json --bundles appimage
+          args: ${{ matrix.args }}
