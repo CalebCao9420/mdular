@@ -74,7 +74,9 @@ npm run sync:app-metadata  # 将 app.manifest.json 同步到各宿主 manifest
 `package.json` 只负责依赖、workspace 和脚本。CI 会运行 `check:app-metadata`，阻止 Tauri、Cargo 和
 PWA manifest 中的派生值发生漂移。
 
-推送版本标签（例如 `v0.0.4`）后，`Build Desktop` 会先执行完整检查，再并行构建所有桌面平台并创建 Draft Release。
+推送与 `app.manifest.json` 版本一致的标签（例如 `v1.2.3`）后，`Build Desktop` 会先执行完整检查，
+再并行构建所有桌面平台并创建 Draft Release。标签与 manifest 版本不一致时，发布门禁会在构建前失败。
+macOS CI 产物使用 ad-hoc 临时签名，但未经过 Apple notarization。
 
 ---
 

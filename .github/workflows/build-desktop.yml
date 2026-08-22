@@ -1,15 +1,16 @@
 # Build and collect every supported desktop installer on GitHub-hosted runners.
 #
 # Trigger: Actions -> "Build Desktop" -> Run workflow
-# Or: push a version tag such as v0.0.4.
+# Or: push a version tag matching app.manifest.json, such as v1.2.3.
 #
 # Outputs in one draft GitHub Release:
 #   - Windows x64 -> NSIS installer
 #   - macOS Apple Silicon + Intel -> DMG installers
 #   - Linux x64 -> AppImage
 #
-# Windows and macOS bundles are unsigned by default. The CI override also
-# disables Tauri updater artifacts until release signing is configured.
+# Windows bundles are unsigned. macOS bundles use an ad-hoc signature but are
+# not notarized. The CI override also disables Tauri updater artifacts until
+# release signing is configured.
 
 name: Build Desktop
 
@@ -37,6 +38,12 @@ jobs:
         with:
           node-version: lts/*
           cache: npm
+
+      - name: Verify release tag matches app manifest
+        if: github.ref_type == 'tag'
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: npm run check:release-version
 
       - name: Install dependencies
         run: npm ci
@@ -124,7 +131,7 @@ jobs:
             Desktop builds for this version.
 
             - **Windows**: x64 NSIS installer (`.exe`). Unsigned; Windows SmartScreen may warn.
-            - **macOS**: DMG for Apple Silicon and Intel. Unsigned; first open may require right-click -> Open.
+            - **macOS**: DMG for Apple Silicon and Intel. Ad-hoc signed but not notarized; first open may require approval in Privacy & Security.
             - **Linux**: x64 AppImage. Run `chmod +x` before launching.
           releaseDraft: true
           prerelease: false

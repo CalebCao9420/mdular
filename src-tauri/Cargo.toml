@@ -1,6 +1,6 @@
 [package]
 name = "mdular"
-version = "0.0.3"
+version = "0.0.4"
 description = "A modular, local-first Markdown editor."
 authors = ["CalebCao9420"]
 license = "MIT"
