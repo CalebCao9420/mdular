@@ -72,9 +72,7 @@ Please, reopen the folder again and check "Allow on every visit" checkbox`);
     log(`Files loaded in ${performance.now() - perf2}ms`);
   } else {
     let perf2 = performance.now();
-    if (!await exists("/Help.md")) {
-      await write("/Help.md", getToolkitHelpIntro() + getHelpContent());
-    }
+    await ensureWorkspaceHelpFile();
     files = await loadLocalFiles(null);
     log(`Tauri workspace loaded in ${performance.now() - perf2}ms`);
   }
@@ -254,7 +252,7 @@ async function applyWorkspaceDirectory(dirHandle) {
     await new Promise((r) => setTimeout(r, 50));
   }
   await saveDirectoryHandle(dirHandle);
-  await write("/Help.md", getToolkitHelpIntro() + getHelpContent());
+  await ensureWorkspaceHelpFile();
   files = await loadLocalFiles(dirHandle);
   isMemFS = false;
   hideWorkspaceOpenControls();
@@ -263,19 +261,28 @@ function hideWorkspaceOpenControls() {
   document.getElementById("open-folder").style.display = "none";
   const openFolderBtn = document.getElementById("open-folder-btn");
   if (openFolderBtn) {
-    openFolderBtn.style.display = "none";
+    openFolderBtn.style.display = "";
   }
   if (typeof removeWorkspaceHintBanner === "function") {
     removeWorkspaceHintBanner();
+  }
+}
+async function ensureWorkspaceHelpFile() {
+  try {
+    if (await exists("/Help.md")) {
+      return;
+    }
+    await write("/Help.md", getAppHelpIntro() + getHelpContent());
+  } catch (error) {
+    logError("Unable to initialize workspace Help.md:", error);
+    showToast("Workspace opened, but Help.md could not be initialized.");
   }
 }
 async function applyTauriWorkspaceDirectory(path) {
   while (isLoadingLocalFiles) {
     await new Promise((r) => setTimeout(r, 50));
   }
-  if (!await exists("/Help.md")) {
-    await write("/Help.md", getToolkitHelpIntro() + getHelpContent());
-  }
+  await ensureWorkspaceHelpFile();
   files = await loadLocalFiles(null);
   isMemFS = false;
   hideWorkspaceOpenControls();

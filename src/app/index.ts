@@ -90,9 +90,7 @@ async function init() {
         log(`Files loaded in ${performance.now() - perf}ms`);
     } else {
         let perf = performance.now();
-        if (!(await exists('/Help.md'))) {
-            await write('/Help.md', getToolkitHelpIntro() + getHelpContent());
-        }
+        await ensureWorkspaceHelpFile();
         files = await loadLocalFiles(null);
         log(`Tauri workspace loaded in ${performance.now() - perf}ms`);
     }
@@ -327,7 +325,7 @@ async function applyWorkspaceDirectory(dirHandle) {
     }
 
     await saveDirectoryHandle(dirHandle);
-    await write('/Help.md', getToolkitHelpIntro() + getHelpContent());
+    await ensureWorkspaceHelpFile();
     // loadLocalFiles owns the loading flag. Setting it here made the loader
     // return the previous workspace immediately instead of reading dirHandle.
     files = await loadLocalFiles(dirHandle);
@@ -340,10 +338,26 @@ function hideWorkspaceOpenControls() {
     document.getElementById('open-folder').style.display = 'none';
     const openFolderBtn = document.getElementById('open-folder-btn');
     if (openFolderBtn) {
-        openFolderBtn.style.display = 'none';
+        // Keep the toolbar action available so a bound or broken default
+        // workspace can always be switched without going through Settings.
+        openFolderBtn.style.display = '';
     }
     if (typeof removeWorkspaceHintBanner === 'function') {
         removeWorkspaceHintBanner();
+    }
+}
+
+async function ensureWorkspaceHelpFile() {
+    try {
+        if (await exists('/Help.md')) {
+            return;
+        }
+        await write('/Help.md', getAppHelpIntro() + getHelpContent());
+    } catch (error) {
+        // Help.md is a convenience seed, not a condition for opening a
+        // workspace. Read-only folders must still load their existing files.
+        logError('Unable to initialize workspace Help.md:', error);
+        showToast('Workspace opened, but Help.md could not be initialized.');
     }
 }
 
@@ -351,10 +365,7 @@ async function applyTauriWorkspaceDirectory(path) {
     while (isLoadingLocalFiles) {
         await new Promise(r => setTimeout(r, 50));
     }
-
-    if (!(await exists('/Help.md'))) {
-        await write('/Help.md', getToolkitHelpIntro() + getHelpContent());
-    }
+    await ensureWorkspaceHelpFile();
     files = await loadLocalFiles(null);
     isMemFS = false;
     hideWorkspaceOpenControls();

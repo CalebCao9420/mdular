@@ -110,13 +110,11 @@ async function initTauriShell(hint) {
   }
   initUpdateDownloadPanel();
   applyAppShellMode(true);
-  let path = (hint?.workspacePath || "").trim();
-  if (!path) {
-    try {
-      const fromRust = await tauriInvoke("workspace_get_path");
-      path = (fromRust || "").trim();
-    } catch {
-    }
+  let path = "";
+  try {
+    const fromRust = await tauriInvoke("workspace_get_path");
+    path = (fromRust || "").trim();
+  } catch {
   }
   if (path) {
     launcherWorkspacePath = path;

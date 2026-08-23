@@ -12,7 +12,7 @@ function readProjectFile(relativePath) {
   return readFileSync(resolve(projectRoot, relativePath), 'utf8');
 }
 
-function createShellHarness() {
+function createShellHarness(launcherHint = null) {
   const boundStates = [];
   const windowObject = {
     location: { search: '' },
@@ -33,7 +33,9 @@ function createShellHarness() {
       documentElement: { classList: { add() {} } },
       getElementById: () => null,
     },
-    fetch: async () => ({ ok: false }),
+    fetch: async () => launcherHint === null
+      ? ({ ok: false })
+      : ({ ok: true, json: async () => launcherHint }),
     log() {},
     openDir() {},
     sessionStorage: { getItem: () => null, setItem() {} },
@@ -99,6 +101,25 @@ test('Tauri directory selection rejects an invalid host result', async () => {
   );
 });
 
+test('Tauri startup trusts the Rust binding instead of a stale launcher hint path', async () => {
+  const { boundStates, context, windowObject } = createShellHarness({
+    shell: true,
+    workspacePath: 'D:\\stale-launcher-workspace',
+  });
+  windowObject.__TAURI__ = {
+    core: {
+      invoke: async (command) => {
+        assert.equal(command, 'workspace_get_path');
+        return 'D:\\actual-native-workspace';
+      },
+    },
+  };
+
+  assert.equal(await context.initDesktopShell(), true);
+  assert.equal(context.getLauncherWorkspacePath(), 'D:\\actual-native-workspace');
+  assert.deepEqual(boundStates, [true]);
+});
+
 test('desktop Open Folder integration routes through Tauri and guards browser-only globals', () => {
   const appSource = readProjectFile('src/app/index.ts');
   const filesSource = readProjectFile('src/files/index.ts');
@@ -155,6 +176,20 @@ test('desktop settings persist one default workspace without accepting a fronten
   assert.match(indexSource, /id="desktop-settings-btn"/u);
   assert.match(indexSource, /id="desktop-settings-open-on-startup"/u);
   assert.match(offlineSource, /'\/desktop-settings\.js'/u);
+});
+
+test('workspace bootstrap uses the defined help intro and preserves Open Folder recovery', () => {
+  const appSource = readProjectFile('src/app/index.ts');
+  const configSource = readProjectFile('src/config.ts');
+
+  assert.match(configSource, /function getAppHelpIntro\(\): string/u);
+  assert.match(configSource, /Object\.assign\(globalThis,[\s\S]*getAppHelpIntro/u);
+  assert.match(appSource, /async function ensureWorkspaceHelpFile\(\)/u);
+  assert.match(appSource, /write\('\/Help\.md', getAppHelpIntro\(\) \+ getHelpContent\(\)\)/u);
+  assert.doesNotMatch(appSource, /getToolkitHelpIntro/u);
+  assert.match(appSource, /openFolderBtn\.style\.display = ''/u);
+  assert.doesNotMatch(appSource, /openFolderBtn\.style\.display = 'none'/u);
+  assert.match(appSource, /Help\.md is a convenience seed[\s\S]*logError/u);
 });
 
 test('manual desktop builds upload candidates while tags alone create releases', () => {

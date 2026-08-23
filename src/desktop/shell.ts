@@ -150,14 +150,15 @@ async function initTauriShell(hint: LauncherHint | null): Promise<boolean> {
   initUpdateDownloadPanel();
   applyAppShellMode(true);
 
-  let path = (hint?.workspacePath || '').trim();
-  if (!path) {
-    try {
-      const fromRust = await tauriInvoke<string | null>('workspace_get_path');
-      path = (fromRust || '').trim();
-    } catch {
-      // No workspace was supplied by the desktop host.
-    }
+  // In Tauri, only Rust can establish a native workspace capability. A
+  // launcher hint is display metadata for the browser shell and may be stale;
+  // treating it as a binding can hide Open Folder while Rust has no root.
+  let path = '';
+  try {
+    const fromRust = await tauriInvoke<string | null>('workspace_get_path');
+    path = (fromRust || '').trim();
+  } catch {
+    // No workspace was supplied by the desktop host.
   }
 
   if (path) {
