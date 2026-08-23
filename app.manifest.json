@@ -1,6 +1,6 @@
 {
   "name": "mdular",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "identifier": "com.issuegame.mdular",
   "description": "A modular, local-first Markdown editor.",
   "author": "CalebCao9420",

@@ -54,6 +54,7 @@ declare function getFileHandle(path: string, create?: boolean): Promise<any>;
 declare function getRootDirHandle(): Promise<any>;
 declare function generateSafeFilename(name: string): string;
 declare function sanitizeFilename(name: string): string;
+declare function isBrowserDirectoryHandle(value: unknown): value is FileSystemDirectoryHandle;
 
 declare function addHeaderAndText(
   path: string,
@@ -160,10 +161,14 @@ declare function initKanbanPlugin(api: PluginAPI): void;
 declare function getProjectScaffoldModal(): { armOutsideClickGuard(ms?: number): void; pick(): Promise<string | null> };
 
 declare function initDesktopShell(): Promise<boolean>;
+declare function initDesktopSettings(workspaceBound: boolean): Promise<void>;
+declare function openDesktopSettings(): Promise<void>;
+declare function closeDesktopSettings(): void;
 declare function getLauncherWorkspacePath(): string;
 declare function getLauncherPlugins(): string[];
 declare function isTauriHost(): boolean;
 declare function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T>;
+declare function selectTauriWorkspaceDirectory(): Promise<string | null>;
 declare function isTauriWorkspaceBound(): boolean;
 declare function setTauriWorkspaceBound(bound: boolean): void;
 declare function relativeToAppPath(relative: string): string;

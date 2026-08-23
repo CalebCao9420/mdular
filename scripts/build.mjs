@@ -51,6 +51,7 @@ const entries = [
   ['src/vcs/menu.ts', 'web/vcs-menu.js'],
   ['src/vcs/dirty.ts', 'web/vcs-dirty.js'],
   ['src/desktop/shell.ts', 'web/desktop-shell.js'],
+  ['src/desktop/settings.ts', 'web/desktop-settings.js'],
   ['src/desktop/tauri-fs.ts', 'web/tauri-fs.js'],
   ['src/plugins/kanban/ticket-statuses.ts', 'web/plugins/kanban/ticket-statuses.js'],
   ['src/plugins/kanban/board-columns.ts', 'web/plugins/kanban/board-columns.js'],

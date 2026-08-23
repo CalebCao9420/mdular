@@ -18,7 +18,7 @@
 | **插件 `kanban`** | Chat → **To Issues**；工具栏打开看板（**Ctrl+Shift+B**） |
 | **桌面** | `start-tauri.bat` 开发 · GitHub Actions 构建 Windows/macOS/Linux 安装包 · `start.bat` 浏览器 |
 
-Tauri：**开发**用 `start-tauri.bat`（`-Folder` 自动绑工作区）；**分发**由 `Build Desktop` workflow 统一生成 Windows NSIS、macOS DMG 与 Linux AppImage，并汇总到同一个 Draft Release。
+Tauri：**开发**用 `start-tauri.bat`（`-Folder` 自动绑工作区）；`Build Desktop` workflow 统一生成 Windows NSIS、macOS DMG 与 Linux AppImage。手动触发时产出短期 candidate artifacts，版本 tag 触发时才汇总到 Draft Release。
 
 Chat 操作栏的 **To Docs / To Issues** 由插件注册；看板全屏 UI 需工具栏或快捷键单独打开。
 
@@ -74,8 +74,9 @@ npm run sync:app-metadata  # 将 app.manifest.json 同步到各宿主 manifest
 `package.json` 只负责依赖、workspace 和脚本。CI 会运行 `check:app-metadata`，阻止 Tauri、Cargo 和
 PWA manifest 中的派生值发生漂移。
 
-推送与 `app.manifest.json` 版本一致的标签（例如 `v1.2.3`）后，`Build Desktop` 会先执行完整检查，
-再并行构建所有桌面平台并创建 Draft Release。标签与 manifest 版本不一致时，发布门禁会在构建前失败。
+从 Actions 手动运行 `Build Desktop` 会先执行完整检查，再并行构建四个平台并上传保留 7 天的
+candidate artifacts，不会创建 Release。推送与 `app.manifest.json` 版本一致的标签（例如 `v1.2.3`）后，
+同一 workflow 才创建 Draft Release；标签与 manifest 版本不一致时，发布门禁会在构建前失败。
 macOS CI 产物使用 ad-hoc 临时签名，但未经过 Apple notarization。
 
 ---

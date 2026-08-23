@@ -449,7 +449,7 @@ async function syncCurrentFile(switchAwayEditor = false) {
     return;
   }
   const savedDirHandle = await getRootDirHandle();
-  const hasSavedDir = savedDirHandle instanceof FileSystemDirectoryHandle || typeof isTauriWorkspaceBound === "function" && isTauriWorkspaceBound();
+  const hasSavedDir = isBrowserDirectoryHandle(savedDirHandle) || typeof isTauriWorkspaceBound === "function" && isTauriWorkspaceBound();
   if (!hasSavedDir && !isMemFS) {
     return;
   }

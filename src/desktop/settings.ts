@@ -1,0 +1,234 @@
+/// <reference path="../types/global.d.ts" />
+
+interface WorkspaceStartupSettings {
+  schemaVersion: number;
+  defaultPath: string | null;
+  openOnStartup: boolean;
+}
+
+// #region State and rendering
+
+let desktopSettingsState: WorkspaceStartupSettings = {
+  schemaVersion: 1,
+  defaultPath: null,
+  openOnStartup: false,
+};
+let desktopSettingsInitialized = false;
+let desktopSettingsBusy = false;
+let desktopSettingsStartupWorkspaceBound = false;
+let desktopSettingsReturnFocus: HTMLElement | null = null;
+
+function desktopSettingsElement<T extends HTMLElement>(id: string): T | null {
+  return document.getElementById(id) as T | null;
+}
+
+function normalizeWorkspaceStartupSettings(value: unknown): WorkspaceStartupSettings {
+  const source = (value || {}) as Partial<WorkspaceStartupSettings>;
+  return {
+    schemaVersion: typeof source.schemaVersion === 'number' ? source.schemaVersion : 1,
+    defaultPath:
+      typeof source.defaultPath === 'string' && source.defaultPath.trim()
+        ? source.defaultPath.trim()
+        : null,
+    openOnStartup: source.openOnStartup === true,
+  };
+}
+
+function desktopSettingsErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function setDesktopSettingsStatus(message: string, error = false): void {
+  const status = desktopSettingsElement<HTMLElement>('desktop-settings-status');
+  if (null === status) { return; }
+  status.textContent = message;
+  status.dataset.kind = error ? 'error' : 'info';
+}
+
+function renderDesktopSettings(): void {
+  const path = desktopSettingsElement<HTMLElement>('desktop-settings-path');
+  const choose = desktopSettingsElement<HTMLButtonElement>('desktop-settings-choose');
+  const clear = desktopSettingsElement<HTMLButtonElement>('desktop-settings-clear');
+  const startup = desktopSettingsElement<HTMLInputElement>('desktop-settings-open-on-startup');
+
+  if (null !== path) {
+    path.textContent = desktopSettingsState.defaultPath || 'Not set';
+    path.dataset.empty = desktopSettingsState.defaultPath ? 'false' : 'true';
+  }
+  if (null !== choose) { choose.disabled = desktopSettingsBusy; }
+  if (null !== clear) {
+    clear.disabled = desktopSettingsBusy || null === desktopSettingsState.defaultPath;
+  }
+  if (null !== startup) {
+    startup.checked = desktopSettingsState.openOnStartup;
+    startup.disabled = desktopSettingsBusy || null === desktopSettingsState.defaultPath;
+  }
+}
+
+function setDesktopSettingsBusy(busy: boolean): void {
+  desktopSettingsBusy = busy;
+  renderDesktopSettings();
+}
+
+function setDesktopSettingsSummary(): void {
+  if (
+    desktopSettingsState.openOnStartup
+    && null !== desktopSettingsState.defaultPath
+    && !desktopSettingsStartupWorkspaceBound
+  ) {
+    setDesktopSettingsStatus(
+      'Default workspace unavailable. Choose it again or use Open Folder.',
+      true,
+    );
+    return;
+  }
+  setDesktopSettingsStatus(
+    null === desktopSettingsState.defaultPath
+      ? 'No default workspace selected.'
+      : 'Saved for the next launch.',
+  );
+}
+
+// #endregion
+
+// #region Host commands
+
+async function refreshDesktopSettings(): Promise<void> {
+  desktopSettingsState = normalizeWorkspaceStartupSettings(
+    await tauriInvoke<WorkspaceStartupSettings>('workspace_get_startup_settings'),
+  );
+  renderDesktopSettings();
+  setDesktopSettingsSummary();
+}
+
+async function chooseDesktopDefaultWorkspace(): Promise<void> {
+  setDesktopSettingsBusy(true);
+  try {
+    const selected = await tauriInvoke<WorkspaceStartupSettings | null>(
+      'workspace_choose_default',
+    );
+    if (null === selected) {
+      setDesktopSettingsStatus('Selection unchanged.');
+      return;
+    }
+    desktopSettingsState = normalizeWorkspaceStartupSettings(selected);
+    desktopSettingsStartupWorkspaceBound = true;
+    renderDesktopSettings();
+    setDesktopSettingsStatus('Default workspace saved for the next launch.');
+  } catch (error) {
+    setDesktopSettingsStatus('Unable to choose workspace: ' + desktopSettingsErrorMessage(error), true);
+  } finally {
+    setDesktopSettingsBusy(false);
+  }
+}
+
+async function clearDesktopDefaultWorkspace(): Promise<void> {
+  setDesktopSettingsBusy(true);
+  try {
+    desktopSettingsState = normalizeWorkspaceStartupSettings(
+      await tauriInvoke<WorkspaceStartupSettings>('workspace_clear_default'),
+    );
+    renderDesktopSettings();
+    setDesktopSettingsStatus('Default workspace cleared.');
+  } catch (error) {
+    setDesktopSettingsStatus('Unable to clear workspace: ' + desktopSettingsErrorMessage(error), true);
+  } finally {
+    setDesktopSettingsBusy(false);
+  }
+}
+
+async function updateDesktopOpenOnStartup(enabled: boolean): Promise<void> {
+  setDesktopSettingsBusy(true);
+  try {
+    desktopSettingsState = normalizeWorkspaceStartupSettings(
+      await tauriInvoke<WorkspaceStartupSettings>('workspace_set_open_on_startup', { enabled }),
+    );
+    renderDesktopSettings();
+    setDesktopSettingsStatus(enabled ? 'Workspace will open on startup.' : 'Startup opening disabled.');
+  } catch (error) {
+    renderDesktopSettings();
+    setDesktopSettingsStatus('Unable to update startup setting: ' + desktopSettingsErrorMessage(error), true);
+  } finally {
+    setDesktopSettingsBusy(false);
+  }
+}
+
+// #endregion
+
+// #region Lifecycle
+
+async function openDesktopSettings(): Promise<void> {
+  if (!isTauriHost()) { return; }
+  const overlay = desktopSettingsElement<HTMLElement>('desktop-settings');
+  if (null === overlay) { return; }
+  desktopSettingsReturnFocus = document.activeElement as HTMLElement | null;
+  overlay.style.display = 'flex';
+  desktopSettingsElement<HTMLButtonElement>('desktop-settings-close')?.focus();
+  try {
+    await refreshDesktopSettings();
+  } catch (error) {
+    setDesktopSettingsStatus('Unable to load settings: ' + desktopSettingsErrorMessage(error), true);
+  }
+}
+
+function closeDesktopSettings(): void {
+  const overlay = desktopSettingsElement<HTMLElement>('desktop-settings');
+  if (null !== overlay) { overlay.style.display = 'none'; }
+  desktopSettingsReturnFocus?.focus();
+  desktopSettingsReturnFocus = null;
+}
+
+async function initDesktopSettings(workspaceBound: boolean): Promise<void> {
+  if (!isTauriHost()) { return; }
+  desktopSettingsStartupWorkspaceBound = workspaceBound;
+  const button = desktopSettingsElement<HTMLButtonElement>('desktop-settings-btn');
+  if (null !== button) { button.style.display = ''; }
+
+  if (!desktopSettingsInitialized) {
+    desktopSettingsInitialized = true;
+    button?.addEventListener('click', () => { void openDesktopSettings(); });
+    desktopSettingsElement('desktop-settings-close')?.addEventListener('click', closeDesktopSettings);
+    desktopSettingsElement('desktop-settings-choose')?.addEventListener('click', () => {
+      void chooseDesktopDefaultWorkspace();
+    });
+    desktopSettingsElement('desktop-settings-clear')?.addEventListener('click', () => {
+      void clearDesktopDefaultWorkspace();
+    });
+    desktopSettingsElement<HTMLInputElement>('desktop-settings-open-on-startup')
+      ?.addEventListener('change', (event) => {
+        void updateDesktopOpenOnStartup((event.currentTarget as HTMLInputElement).checked);
+      });
+    desktopSettingsElement('desktop-settings')?.addEventListener('click', (event) => {
+      if (event.currentTarget === event.target) { closeDesktopSettings(); }
+    });
+    document.addEventListener('keydown', (event) => {
+      if ('Escape' !== event.key) { return; }
+      const overlay = desktopSettingsElement<HTMLElement>('desktop-settings');
+      if (null === overlay || 'none' === overlay.style.display) { return; }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      closeDesktopSettings();
+    }, true);
+  }
+
+  try {
+    await refreshDesktopSettings();
+    if (
+      desktopSettingsState.openOnStartup
+      && null !== desktopSettingsState.defaultPath
+      && !workspaceBound
+    ) {
+      showToast('Default workspace unavailable. Open Folder or update it in Settings.');
+    }
+  } catch (error) {
+    setDesktopSettingsStatus('Unable to load settings: ' + desktopSettingsErrorMessage(error), true);
+  }
+}
+
+Object.assign(globalThis, {
+  initDesktopSettings,
+  openDesktopSettings,
+  closeDesktopSettings,
+});
+
+// #endregion
