@@ -925,21 +925,37 @@ pre.CodeMirror-line:has(.hmd-fold-code-stub.hmd-fold-code-mermaid) {
 .cm-s-hypermd-light span.hmd-hidden-token.cm-formatting-task {
     color: transparent !important;
 }
-.cm-s-hypermd-light pre.hmd-inactive-line.HyperMD-table-row-1 {
-    color: transparent;
-    text-shadow: none;
+.cm-s-hypermd-light pre.hmd-inactive-line.HyperMD-table-row-1,
+.cm-s-hypermd-light.read-only-view pre.HyperMD-table-row-1 {
+    /* The brutal themes set every CodeMirror line to 1.9 with !important.
+       Override them only while the delimiter is rendered, so an active edit
+       line can still expand to the normal source-editing height. */
+    line-height: 8px !important;
 }
-.cm-s-hypermd-light pre.hmd-inactive-line.HyperMD-hr {
-    color: transparent;
-    background-color: transparent;
+.cm-s-hypermd-light pre.hmd-inactive-line.HyperMD-table-row-1,
+.cm-s-hypermd-light.read-only-view pre.HyperMD-table-row-1,
+.cm-s-hypermd-light pre.hmd-inactive-line.HyperMD-table-row-1 .hmd-table-column-content,
+.cm-s-hypermd-light.read-only-view pre.HyperMD-table-row-1 .hmd-table-column-content {
+    /* A table delimiter is also tokenized as HyperMD-hr. Theme HR colors use
+       !important, so this rule must win explicitly to keep the source hidden. */
+    color: transparent !important;
+    text-shadow: none !important;
 }
-.cm-s-hypermd-light pre.hmd-inactive-line.HyperMD-table-row-1 > span {
+.cm-s-hypermd-light pre.hmd-inactive-line.HyperMD-hr,
+.cm-s-hypermd-light.read-only-view pre.HyperMD-hr {
+    color: transparent !important;
+    background-color: transparent !important;
+}
+.cm-s-hypermd-light pre.hmd-inactive-line.HyperMD-table-row-1 > span,
+.cm-s-hypermd-light.read-only-view pre.HyperMD-table-row-1 > span {
     background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAQAAAAziH6sAAAADklEQVR42mOc+Z9x5n8ACTkDM4ikM1IAAAAASUVORK5CYII=) repeat-x 0px center;
 }
-.cm-s-hypermd-light pre.hmd-inactive-line.HyperMD-table-row span.cm-hmd-table-sep {
-    color: transparent;
+.cm-s-hypermd-light pre.hmd-inactive-line.HyperMD-table-row span.cm-hmd-table-sep,
+.cm-s-hypermd-light.read-only-view pre.HyperMD-table-row span.cm-hmd-table-sep {
+    color: transparent !important;
 }
-.cm-s-hypermd-light pre.hmd-inactive-line.HyperMD-table-row span.cm-hmd-table-sep.cm-hmd-table-sep-dummy:before {
+.cm-s-hypermd-light pre.hmd-inactive-line.HyperMD-table-row span.cm-hmd-table-sep.cm-hmd-table-sep-dummy:before,
+.cm-s-hypermd-light.read-only-view pre.HyperMD-table-row span.cm-hmd-table-sep.cm-hmd-table-sep-dummy:before {
     display: none;
 }
 .cm-s-hypermd-light pre.hmd-inactive-line span.cm-formatting-quote {
