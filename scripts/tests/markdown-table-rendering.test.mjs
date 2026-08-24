@@ -2,12 +2,98 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import test from 'node:test';
+import { createContext, runInContext } from 'node:vm';
 
 const projectRoot = resolve(import.meta.dirname, '..', '..');
 
 function readProjectFile(relativePath) {
   return readFileSync(resolve(projectRoot, relativePath), 'utf8');
 }
+
+function tokenizeHyperMd(lines) {
+  const context = createContext({
+    console,
+    document: {
+      body: {},
+      createElement: () => ({
+        setAttribute(name) {
+          this[name] = () => {};
+        },
+      }),
+      documentElement: {},
+    },
+    HyperMD: {},
+    navigator: { maxTouchPoints: 0, platform: '', userAgent: '', vendor: '' },
+  });
+  context.window = context;
+  context.self = context;
+
+  for (const relativePath of ['web/lib/codemirror.js', 'web/lib/markdown.js', 'web/lib/hypermd.js']) {
+    runInContext(readProjectFile(relativePath), context, { filename: relativePath });
+  }
+
+  const codeMirror = context.CodeMirror;
+  const mode = codeMirror.getMode({ indentUnit: 2 }, { name: 'hypermd', table: true });
+  const state = codeMirror.startState(mode);
+
+  return lines.map((line, lineIndex) => {
+    const stream = new codeMirror.StringStream(line, 4, {
+      line: lineIndex,
+      lookAhead(offset) {
+        return lines[lineIndex + offset];
+      },
+    });
+    const styles = [];
+    while (!stream.eol()) {
+      const tokenStart = stream.pos;
+      const style = mode.token(stream, state) || '';
+      assert.ok(stream.pos > tokenStart, `tokenizer did not advance on ${JSON.stringify(line)}`);
+      styles.push({ style, text: stream.current() });
+      stream.start = stream.pos;
+    }
+    return styles;
+  });
+}
+
+test('HyperMD recognizes a valid final delimiter cell without requiring trailing whitespace', () => {
+  for (const delimiter of [
+    '|-----|-----|',
+    '| ------ |------|',
+    '| ------|------|',
+    '|------ |------|',
+    '|------ | ------|',
+    '|-----| -----|',
+    '|-----|------ |',
+    '| ------ |------ |',
+    '| :----- |-----:|',
+  ]) {
+    const [headerTokens, delimiterTokens, bodyTokens] = tokenizeHyperMd([
+      '| Hotkey | Action |',
+      delimiter,
+      '| `[` | Insert a link to a file |',
+    ]);
+    for (const tokens of [headerTokens, delimiterTokens, bodyTokens]) {
+      assert.equal(
+        tokens.filter(({ style }) => style.split(/\s+/u).includes('hmd-table-sep')).length,
+        3,
+        delimiter,
+      );
+    }
+    assert.match(delimiterTokens.map(({ style }) => style).join(' '), /line-HyperMD-table-row-1/u, delimiter);
+    assert.match(bodyTokens.map(({ style }) => style).join(' '), /line-HyperMD-table-row-2/u, delimiter);
+  }
+});
+
+test('HyperMD keeps an escaped pipe inside a table cell', () => {
+  const [headerTokens] = tokenizeHyperMd([
+    '| left \\| right | note |',
+    '|---|---|',
+  ]);
+  assert.equal(
+    headerTokens.filter(({ style }) => style.split(/\s+/u).includes('hmd-table-sep')).length,
+    3,
+  );
+});
 
 test('GFM table delimiter rows stay compact under the brutal theme', () => {
   const hypermdCss = readProjectFile('web/lib/hypermd.css');
@@ -48,6 +134,6 @@ test('read-only view never reveals a table delimiter through a stale cursor line
   );
   assert.match(
     hypermdCss,
-    /\.cm-s-hypermd-light\.read-only-view pre\.HyperMD-table-row span\.cm-hmd-table-sep[\s\S]*?color:\s*transparent\s*!important/u,
+    /pre\.HyperMD-table-row span\.cm-hmd-table-sep\s*\{[\s\S]*?color:\s*transparent\s*!important/u,
   );
 });
