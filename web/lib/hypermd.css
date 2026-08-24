@@ -806,6 +806,11 @@ pre.CodeMirror-line:has(.hmd-fold-code-stub.hmd-fold-code-mermaid) {
     text-align: center;
     box-sizing: content-box;
     font-weight: normal;
+    /* Keep the column border stable when the cursor enters a table row.
+       The real pipe remains editable, while the pseudo-element below is the
+       only visible separator in both active and inactive rows. */
+    color: transparent !important;
+    text-shadow: none !important;
 }
 .cm-s-hypermd-light pre.HyperMD-table-row span.cm-hmd-table-sep.cm-hmd-table-sep-dummy {
     width: 1em;
@@ -949,10 +954,6 @@ pre.CodeMirror-line:has(.hmd-fold-code-stub.hmd-fold-code-mermaid) {
 .cm-s-hypermd-light pre.hmd-inactive-line.HyperMD-table-row-1 > span,
 .cm-s-hypermd-light.read-only-view pre.HyperMD-table-row-1 > span {
     background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAQAAAAziH6sAAAADklEQVR42mOc+Z9x5n8ACTkDM4ikM1IAAAAASUVORK5CYII=) repeat-x 0px center;
-}
-.cm-s-hypermd-light pre.hmd-inactive-line.HyperMD-table-row span.cm-hmd-table-sep,
-.cm-s-hypermd-light.read-only-view pre.HyperMD-table-row span.cm-hmd-table-sep {
-    color: transparent !important;
 }
 .cm-s-hypermd-light pre.hmd-inactive-line.HyperMD-table-row span.cm-hmd-table-sep.cm-hmd-table-sep-dummy:before,
 .cm-s-hypermd-light.read-only-view pre.HyperMD-table-row span.cm-hmd-table-sep.cm-hmd-table-sep-dummy:before {
