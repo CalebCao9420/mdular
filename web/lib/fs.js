@@ -16,6 +16,11 @@ function isTauriFs() {
     return typeof isTauriWorkspaceBound === 'function' && isTauriWorkspaceBound();
 }
 
+function isBrowserDirectoryHandle(value) {
+    return typeof FileSystemDirectoryHandle !== 'undefined'
+        && value instanceof FileSystemDirectoryHandle;
+}
+
 async function getFileHandle(path, create = false) {
     if (isTauriFs()) {
         return tauriGetFileHandle(path, create);

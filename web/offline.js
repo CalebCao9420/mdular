@@ -48,6 +48,7 @@ const urlsToCache = [
     '/build-stamp.js',
     '/config.js',
     '/desktop-shell.js',
+    '/desktop-settings.js',
     '/tauri-fs.js',
     '/lib/fs.js',
     '/lib/md.js',

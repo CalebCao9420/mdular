@@ -35,6 +35,25 @@ async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Prom
   return invoke(cmd, args) as Promise<T>;
 }
 
+async function selectTauriWorkspaceDirectory(): Promise<string | null> {
+  if (!isTauriHost()) {
+    throw new Error('Tauri directory picker unavailable outside the desktop host');
+  }
+
+  const boundPath = await tauriInvoke<string | null>('workspace_pick_and_bind');
+  if (boundPath === null) {
+    return null;
+  }
+  if (typeof boundPath !== 'string' || boundPath.length === 0) {
+    throw new Error('Desktop host did not bind the selected workspace');
+  }
+
+  launcherWorkspacePath = boundPath;
+  setTauriWorkspaceBound(true);
+  removeWorkspaceHintBanner();
+  return boundPath;
+}
+
 function applyAppShellMode(shell: boolean): void {
   if (shell) {
     document.documentElement.classList.add('app-shell');
@@ -131,14 +150,15 @@ async function initTauriShell(hint: LauncherHint | null): Promise<boolean> {
   initUpdateDownloadPanel();
   applyAppShellMode(true);
 
-  let path = (hint?.workspacePath || '').trim();
-  if (!path) {
-    try {
-      const fromRust = await tauriInvoke<string | null>('workspace_get_path');
-      path = (fromRust || '').trim();
-    } catch {
-      // No workspace was supplied by the desktop host.
-    }
+  // In Tauri, only Rust can establish a native workspace capability. A
+  // launcher hint is display metadata for the browser shell and may be stale;
+  // treating it as a binding can hide Open Folder while Rust has no root.
+  let path = '';
+  try {
+    const fromRust = await tauriInvoke<string | null>('workspace_get_path');
+    path = (fromRust || '').trim();
+  } catch {
+    // No workspace was supplied by the desktop host.
   }
 
   if (path) {
@@ -151,7 +171,7 @@ async function initTauriShell(hint: LauncherHint | null): Promise<boolean> {
       .map((id) => id.trim());
   }
 
-  log('Tauri shell · workspace:', path || '(none — restart with -Folder)');
+  log('Tauri shell · workspace:', path || '(none — use Open Folder)');
 
   if (path) {
     launcherWorkspacePath = path;
@@ -425,6 +445,7 @@ Object.assign(globalThis, {
   getLauncherPlugins,
   isTauriHost,
   tauriInvoke,
+  selectTauriWorkspaceDirectory,
   removeWorkspaceHintBanner,
   __appUpdateHud,
 });

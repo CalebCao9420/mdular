@@ -43,6 +43,7 @@ async function init() {
     }
 
     const shellWorkspaceBound = await initDesktopShell();
+    await initDesktopSettings(shellWorkspaceBound);
 
     if (navigator.storage && navigator.storage.persist) {
         const persisted = await navigator.storage.persist();
@@ -50,15 +51,12 @@ async function init() {
     }
 
     const savedDirHandle = await getSavedRootDirHandle();
-    const hasSavedLocalDir = !shellWorkspaceBound && savedDirHandle instanceof FileSystemDirectoryHandle;
+    const hasSavedLocalDir = !shellWorkspaceBound && isBrowserDirectoryHandle(savedDirHandle);
     if (shellWorkspaceBound || hasSavedLocalDir) {
         isMemFS = false;
-        document.getElementById('open-folder').style.display = 'none';
-        const openFolderBtn = document.getElementById('open-folder-btn');
-        if (openFolderBtn) {
-            openFolderBtn.style.display = 'none';
-        }
-    } else if (typeof window.showDirectoryPicker === 'function') {
+        hideWorkspaceOpenControls();
+    } else if ((typeof isTauriHost === 'function' && isTauriHost())
+        || typeof window.showDirectoryPicker === 'function') {
         document.getElementById('open-folder').style.display = 'flex';
         isMemFS = true;
     } else {
@@ -92,9 +90,7 @@ async function init() {
         log(`Files loaded in ${performance.now() - perf}ms`);
     } else {
         let perf = performance.now();
-        if (!(await exists('/Help.md'))) {
-            await write('/Help.md', getToolkitHelpIntro() + getHelpContent());
-        }
+        await ensureWorkspaceHelpFile();
         files = await loadLocalFiles(null);
         log(`Tauri workspace loaded in ${performance.now() - perf}ms`);
     }
@@ -329,36 +325,83 @@ async function applyWorkspaceDirectory(dirHandle) {
     }
 
     await saveDirectoryHandle(dirHandle);
-    await write('/Help.md', getToolkitHelpIntro() + getHelpContent());
+    await ensureWorkspaceHelpFile();
     // loadLocalFiles owns the loading flag. Setting it here made the loader
     // return the previous workspace immediately instead of reading dirHandle.
     files = await loadLocalFiles(dirHandle);
 
     isMemFS = false;
+    hideWorkspaceOpenControls();
+}
+
+function hideWorkspaceOpenControls() {
     document.getElementById('open-folder').style.display = 'none';
     const openFolderBtn = document.getElementById('open-folder-btn');
     if (openFolderBtn) {
-        openFolderBtn.style.display = 'none';
+        // Keep the toolbar action available so a bound or broken default
+        // workspace can always be switched without going through Settings.
+        openFolderBtn.style.display = '';
     }
     if (typeof removeWorkspaceHintBanner === 'function') {
         removeWorkspaceHintBanner();
     }
 }
 
-async function openDir() {
-    let dirHandle = null;
+async function ensureWorkspaceHelpFile() {
     try {
-        dirHandle = await window.showDirectoryPicker({ 'mode': 'readwrite' });
+        if (await exists('/Help.md')) {
+            return;
+        }
+        await write('/Help.md', getAppHelpIntro() + getHelpContent());
     } catch (error) {
-        // User pressed Esc (AbortError) or the browser doesn't support
-        // the picker (TypeError).
-        if (error instanceof TypeError) {
+        // Help.md is a convenience seed, not a condition for opening a
+        // workspace. Read-only folders must still load their existing files.
+        logError('Unable to initialize workspace Help.md:', error);
+        showToast('Workspace opened, but Help.md could not be initialized.');
+    }
+}
+
+async function applyTauriWorkspaceDirectory(path) {
+    while (isLoadingLocalFiles) {
+        await new Promise(r => setTimeout(r, 50));
+    }
+    await ensureWorkspaceHelpFile();
+    files = await loadLocalFiles(null);
+    isMemFS = false;
+    hideWorkspaceOpenControls();
+    showToast('已绑定工作区：' + path);
+}
+
+async function openDir() {
+    const tauriHost = typeof isTauriHost === 'function' && isTauriHost();
+    try {
+        if (tauriHost) {
+            const path = await selectTauriWorkspaceDirectory();
+            if (path === null) {
+                return;
+            }
+            await applyTauriWorkspaceDirectory(path);
+        } else {
+            if (typeof window.showDirectoryPicker !== 'function') {
+                throw new TypeError('Browser directory picker unavailable');
+            }
+            const dirHandle = await window.showDirectoryPicker({ 'mode': 'readwrite' });
+            await applyWorkspaceDirectory(dirHandle);
+        }
+    } catch (error) {
+        if (error?.name === 'AbortError') {
+            return;
+        }
+        if (tauriHost) {
+            logError('Unable to open Tauri workspace:', error);
+            const detail = error instanceof Error ? error.message : String(error);
+            alert('Unable to open folder.\n\n' + detail);
+        } else if (error instanceof TypeError) {
             alert('For now only Chrome browser supports local folders :(');
         }
         return;
     }
 
-    await applyWorkspaceDirectory(dirHandle);
     renderSidebar();
     void loadWorkspaceConfig().then(() => detectVcsRepo());
     await initPlugins();
@@ -491,7 +534,7 @@ async function getRootDirHandle() {
     // If the saved handle is from a browser missing createWritable or
     // remove (Safari OPFS, older Chromium), fall back to the in-memory FS
     // instead of letting later writes/deletes blow up.
-    if (!(savedDirHandle instanceof FileSystemDirectoryHandle) || !opfsIsFullyUsable()) {
+    if (!isBrowserDirectoryHandle(savedDirHandle) || !opfsIsFullyUsable()) {
         return await getTemporaryStorageDirHandle();
     }
 

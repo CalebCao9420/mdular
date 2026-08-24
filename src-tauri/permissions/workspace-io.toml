@@ -3,6 +3,11 @@ identifier = "allow-workspace-io"
 description = "Workspace path and file IO invoke commands."
 commands.allow = [
   "workspace_get_path",
+  "workspace_pick_and_bind",
+  "workspace_get_startup_settings",
+  "workspace_choose_default",
+  "workspace_set_open_on_startup",
+  "workspace_clear_default",
   "workspace_list_files",
   "workspace_exists",
   "workspace_is_dir",

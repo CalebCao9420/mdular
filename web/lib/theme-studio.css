@@ -521,12 +521,14 @@ textarea:focus-visible,
 }
 
 #vcs-menu,
+#desktop-settings,
 .app-update-overlay {
     background: color-mix(in srgb, #080b09 52%, transparent);
     backdrop-filter: blur(6px);
 }
 
 .vcs-menu-panel,
+.desktop-settings-panel,
 .app-update-panel {
     border: 1px solid var(--app-border);
     border-radius: var(--app-radius-lg);
@@ -536,6 +538,7 @@ textarea:focus-visible,
 }
 
 .vcs-menu-actions button,
+.desktop-settings-actions button,
 .app-workspace-hint-actions button,
 .app-update-dismiss {
     border: 1px solid var(--app-border);
@@ -550,6 +553,7 @@ textarea:focus-visible,
 }
 
 .vcs-menu-actions button:hover,
+.desktop-settings-actions button:hover,
 .app-workspace-hint-actions button:hover,
 .app-update-dismiss:hover {
     border-color: var(--app-accent);

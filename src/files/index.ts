@@ -581,7 +581,7 @@ async function syncCurrentFile(switchAwayEditor = false) {
     // Skip sync if we don't have a saved dir
     const savedDirHandle = await getRootDirHandle();
     const hasSavedDir =
-        savedDirHandle instanceof FileSystemDirectoryHandle ||
+        isBrowserDirectoryHandle(savedDirHandle) ||
         (typeof isTauriWorkspaceBound === 'function' && isTauriWorkspaceBound());
     if (!hasSavedDir && !isMemFS) {
         return;

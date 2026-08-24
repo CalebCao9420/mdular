@@ -3,14 +3,35 @@ use std::sync::Mutex;
 use std::time::UNIX_EPOCH;
 
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
-use serde::Serialize;
-use tauri::State;
+use serde::{Deserialize, Serialize};
+use tauri::{Manager, State};
+use tauri_plugin_dialog::DialogExt;
 
 mod tray;
 mod updater;
 
 struct AppState {
     workspace_path: Mutex<Option<PathBuf>>,
+}
+
+const WORKSPACE_STARTUP_SETTINGS_FILE: &str = "workspace-startup.json";
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(default, rename_all = "camelCase")]
+struct WorkspaceStartupSettings {
+    schema_version: u32,
+    default_path: Option<String>,
+    open_on_startup: bool,
+}
+
+impl Default for WorkspaceStartupSettings {
+    fn default() -> Self {
+        Self {
+            schema_version: 1,
+            default_path: None,
+            open_on_startup: false,
+        }
+    }
 }
 
 fn app_environment_variable_name(suffix: &str) -> String {
@@ -69,6 +90,95 @@ fn checked_relative_path(relative_path: &str) -> Result<PathBuf, String> {
 fn canonical_workspace_root(root: &Path) -> Result<PathBuf, String> {
     root.canonicalize()
         .map_err(|e| format!("workspace root invalid: {e}"))
+}
+
+fn canonical_existing_workspace_root(candidate: &Path) -> Result<PathBuf, String> {
+    if !candidate.is_dir() {
+        return Err("workspace path must be an existing directory".into());
+    }
+    canonical_workspace_root(candidate)
+}
+
+fn bind_workspace_root(
+    workspace_path: &Mutex<Option<PathBuf>>,
+    candidate: &Path,
+) -> Result<String, String> {
+    let canonical = canonical_existing_workspace_root(candidate)?;
+    let display_path = canonical.to_string_lossy().into_owned();
+    *workspace_path.lock().map_err(|e| e.to_string())? = Some(canonical);
+    Ok(display_path)
+}
+
+fn load_workspace_startup_settings(path: &Path) -> Result<WorkspaceStartupSettings, String> {
+    let source = match std::fs::read_to_string(path) {
+        Ok(source) => source,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(WorkspaceStartupSettings::default())
+        }
+        Err(error) => {
+            return Err(format!(
+                "unable to read workspace startup settings: {error}"
+            ))
+        }
+    };
+    serde_json::from_str(&source)
+        .map_err(|error| format!("workspace startup settings invalid: {error}"))
+}
+
+fn save_workspace_startup_settings(
+    path: &Path,
+    settings: &WorkspaceStartupSettings,
+) -> Result<(), String> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| "workspace startup settings path has no parent".to_string())?;
+    std::fs::create_dir_all(parent)
+        .map_err(|error| format!("unable to create app config directory: {error}"))?;
+    let content = serde_json::to_string_pretty(settings)
+        .map_err(|error| format!("unable to encode workspace startup settings: {error}"))?;
+    std::fs::write(path, format!("{content}\n"))
+        .map_err(|error| format!("unable to save workspace startup settings: {error}"))
+}
+
+fn workspace_startup_settings_path<R: tauri::Runtime>(
+    manager: &impl Manager<R>,
+) -> Result<PathBuf, String> {
+    manager
+        .path()
+        .app_config_dir()
+        .map(|path| path.join(WORKSPACE_STARTUP_SETTINGS_FILE))
+        .map_err(|error| format!("app config directory unavailable: {error}"))
+}
+
+fn bind_configured_startup_workspace(
+    workspace_path: &Mutex<Option<PathBuf>>,
+    settings: &WorkspaceStartupSettings,
+) -> Result<Option<String>, String> {
+    if !settings.open_on_startup {
+        return Ok(None);
+    }
+    let path = settings
+        .default_path
+        .as_deref()
+        .ok_or_else(|| "default workspace is not configured".to_string())?;
+    bind_workspace_root(workspace_path, Path::new(path)).map(Some)
+}
+
+fn pick_workspace_directory(
+    window: &tauri::Window,
+    title: &str,
+) -> Result<Option<PathBuf>, String> {
+    let dialog = window.dialog().file().set_title(title);
+    #[cfg(any(windows, target_os = "macos"))]
+    let dialog = dialog.set_parent(window);
+
+    let Some(selected) = dialog.blocking_pick_folder() else {
+        return Ok(None);
+    };
+    selected
+        .into_path()
+        .map(Some)
+        .map_err(|_| "selected workspace must be a local directory".to_string())
 }
 
 fn ensure_workspace_target(
@@ -256,6 +366,69 @@ fn workspace_get_path(state: State<AppState>) -> Option<String> {
 }
 
 #[tauri::command]
+async fn workspace_pick_and_bind(
+    window: tauri::Window,
+    state: State<'_, AppState>,
+) -> Result<Option<String>, String> {
+    let Some(path) = pick_workspace_directory(&window, "Open folder")? else {
+        return Ok(None);
+    };
+    bind_workspace_root(&state.workspace_path, &path).map(Some)
+}
+
+#[tauri::command]
+fn workspace_get_startup_settings(
+    app: tauri::AppHandle,
+) -> Result<WorkspaceStartupSettings, String> {
+    let path = workspace_startup_settings_path(&app)?;
+    load_workspace_startup_settings(&path)
+}
+
+#[tauri::command]
+async fn workspace_choose_default(
+    window: tauri::Window,
+) -> Result<Option<WorkspaceStartupSettings>, String> {
+    let Some(selected) = pick_workspace_directory(&window, "Choose default workspace")? else {
+        return Ok(None);
+    };
+    let canonical = canonical_existing_workspace_root(&selected)?;
+    let path = workspace_startup_settings_path(window.app_handle())?;
+    let mut settings = load_workspace_startup_settings(&path).unwrap_or_default();
+    settings.schema_version = 1;
+    settings.default_path = Some(canonical.to_string_lossy().into_owned());
+    save_workspace_startup_settings(&path, &settings)?;
+    Ok(Some(settings))
+}
+
+#[tauri::command]
+fn workspace_set_open_on_startup(
+    app: tauri::AppHandle,
+    enabled: bool,
+) -> Result<WorkspaceStartupSettings, String> {
+    let path = workspace_startup_settings_path(&app)?;
+    let mut settings = load_workspace_startup_settings(&path)?;
+    if enabled {
+        let default_path = settings
+            .default_path
+            .as_deref()
+            .ok_or_else(|| "choose a default workspace first".to_string())?;
+        let canonical = canonical_existing_workspace_root(Path::new(default_path))?;
+        settings.default_path = Some(canonical.to_string_lossy().into_owned());
+    }
+    settings.open_on_startup = enabled;
+    save_workspace_startup_settings(&path, &settings)?;
+    Ok(settings)
+}
+
+#[tauri::command]
+fn workspace_clear_default(app: tauri::AppHandle) -> Result<WorkspaceStartupSettings, String> {
+    let path = workspace_startup_settings_path(&app)?;
+    let settings = WorkspaceStartupSettings::default();
+    save_workspace_startup_settings(&path, &settings)?;
+    Ok(settings)
+}
+
+#[tauri::command]
 fn workspace_list_files(state: State<AppState>) -> Result<Vec<ListedFile>, String> {
     let root = workspace_root(&state)?;
     let root = canonical_workspace_root(&root)?;
@@ -378,6 +551,18 @@ fn workspace_remove_dir(state: State<AppState>, relative_path: String) -> Result
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn unique_test_directory(label: &str) -> PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "workspace-startup-{label}-{}-{nonce}",
+            std::process::id()
+        ))
+    }
 
     #[test]
     fn relative_path_rejects_empty_and_parent_components() {
@@ -400,6 +585,102 @@ mod tests {
         assert!(ensure_workspace_target(&root, &root.join("notes"), false).is_ok());
         assert!(ensure_workspace_target(&root, &root, false).is_err());
         assert!(ensure_workspace_target(&root, Path::new("workspace-sibling"), false).is_err());
+    }
+
+    #[test]
+    fn workspace_bind_accepts_an_existing_directory_and_stores_its_canonical_path() {
+        let workspace_path = Mutex::new(None);
+        let candidate = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let expected = candidate.canonicalize().unwrap();
+
+        let display_path = bind_workspace_root(&workspace_path, candidate).unwrap();
+
+        assert_eq!(PathBuf::from(display_path), expected);
+        assert_eq!(*workspace_path.lock().unwrap(), Some(expected));
+    }
+
+    #[test]
+    fn workspace_bind_rejects_a_file_without_replacing_the_current_workspace() {
+        let original = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let workspace_path = Mutex::new(Some(original.clone()));
+        let candidate = original.join("Cargo.toml");
+
+        assert!(bind_workspace_root(&workspace_path, &candidate).is_err());
+        assert_eq!(*workspace_path.lock().unwrap(), Some(original));
+    }
+
+    #[test]
+    fn workspace_startup_settings_round_trip_through_json_file() {
+        let directory = unique_test_directory("round-trip");
+        let path = directory.join(WORKSPACE_STARTUP_SETTINGS_FILE);
+        let settings = WorkspaceStartupSettings {
+            schema_version: 1,
+            default_path: Some(
+                Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .canonicalize()
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned(),
+            ),
+            open_on_startup: true,
+        };
+
+        save_workspace_startup_settings(&path, &settings).unwrap();
+
+        assert_eq!(load_workspace_startup_settings(&path).unwrap(), settings);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn disabled_startup_setting_does_not_bind_the_default_workspace() {
+        let workspace_path = Mutex::new(None);
+        let settings = WorkspaceStartupSettings {
+            default_path: Some(env!("CARGO_MANIFEST_DIR").to_string()),
+            ..WorkspaceStartupSettings::default()
+        };
+
+        assert_eq!(
+            bind_configured_startup_workspace(&workspace_path, &settings).unwrap(),
+            None
+        );
+        assert_eq!(*workspace_path.lock().unwrap(), None);
+    }
+
+    #[test]
+    fn enabled_startup_setting_binds_the_existing_default_workspace() {
+        let workspace_path = Mutex::new(None);
+        let expected = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .canonicalize()
+            .unwrap();
+        let settings = WorkspaceStartupSettings {
+            default_path: Some(expected.to_string_lossy().into_owned()),
+            open_on_startup: true,
+            ..WorkspaceStartupSettings::default()
+        };
+
+        let bound = bind_configured_startup_workspace(&workspace_path, &settings)
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(PathBuf::from(bound), expected);
+        assert_eq!(*workspace_path.lock().unwrap(), Some(expected));
+    }
+
+    #[test]
+    fn missing_default_workspace_does_not_replace_the_current_workspace() {
+        let original = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .canonicalize()
+            .unwrap();
+        let workspace_path = Mutex::new(Some(original.clone()));
+        let missing = unique_test_directory("missing");
+        let settings = WorkspaceStartupSettings {
+            default_path: Some(missing.to_string_lossy().into_owned()),
+            open_on_startup: true,
+            ..WorkspaceStartupSettings::default()
+        };
+
+        assert!(bind_configured_startup_workspace(&workspace_path, &settings).is_err());
+        assert_eq!(*workspace_path.lock().unwrap(), Some(original));
     }
 }
 
@@ -442,6 +723,23 @@ pub fn run() {
                 app.handle().plugin(tauri_plugin_dialog::init())?;
                 app.handle().plugin(tauri_plugin_process::init())?;
                 updater::schedule_startup_check(app.handle());
+
+                let state = app.state::<AppState>();
+                let already_bound = state
+                    .workspace_path
+                    .lock()
+                    .map(|workspace| workspace.is_some())
+                    .unwrap_or(true);
+                if !already_bound {
+                    let startup_result = workspace_startup_settings_path(app.handle())
+                        .and_then(|path| load_workspace_startup_settings(&path))
+                        .and_then(|settings| {
+                            bind_configured_startup_workspace(&state.workspace_path, &settings)
+                        });
+                    if let Err(error) = startup_result {
+                        eprintln!("Default workspace not opened: {error}");
+                    }
+                }
             }
             tray::setup_tray(app.handle())?;
             Ok(())
@@ -449,6 +747,11 @@ pub fn run() {
         .on_window_event(|window, event| tray::on_window_event(window, event))
         .invoke_handler(tauri::generate_handler![
             workspace_get_path,
+            workspace_pick_and_bind,
+            workspace_get_startup_settings,
+            workspace_choose_default,
+            workspace_set_open_on_startup,
+            workspace_clear_default,
             workspace_list_files,
             workspace_exists,
             workspace_is_dir,

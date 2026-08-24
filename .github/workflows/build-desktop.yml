@@ -1,9 +1,10 @@
 # Build and collect every supported desktop installer on GitHub-hosted runners.
 #
-# Trigger: Actions -> "Build Desktop" -> Run workflow
-# Or: push a version tag matching app.manifest.json, such as v1.2.3.
+# Candidate: Actions -> "Build Desktop" -> Run workflow. This uploads
+# short-lived workflow artifacts and never creates a GitHub Release.
+# Release: push a version tag matching app.manifest.json, such as v1.2.3.
 #
-# Outputs in one draft GitHub Release:
+# Outputs as candidate artifacts or in one draft GitHub Release:
 #   - Windows x64 -> NSIS installer
 #   - macOS Apple Silicon + Intel -> DMG installers
 #   - Linux x64 -> AppImage
@@ -25,9 +26,9 @@ permissions:
 
 jobs:
   check:
-    name: npm check
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    name: npm + Rust checks
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
@@ -40,7 +41,7 @@ jobs:
           cache: npm
 
       - name: Verify release tag matches app manifest
-        if: github.ref_type == 'tag'
+        if: github.event_name == 'push' && github.ref_type == 'tag'
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: npm run check:release-version
@@ -50,6 +51,27 @@ jobs:
 
       - name: Run repository checks
         run: npm run check
+
+      - name: Install Linux dependencies for Rust tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust test cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          key: desktop-check
+
+      - name: Run desktop host tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml
 
   build:
     name: ${{ matrix.label }}
@@ -68,21 +90,25 @@ jobs:
             rust_target: ''
             cache_key: windows-x64
             args: --config src-tauri/tauri.ci.json --bundles nsis
+            artifact_path: src-tauri/target/release/bundle/nsis/*.exe
           - label: macOS Apple Silicon (DMG)
             platform: macos-latest
             rust_target: aarch64-apple-darwin
             cache_key: macos-apple-silicon
             args: --target aarch64-apple-darwin --config src-tauri/tauri.ci.json --bundles dmg
+            artifact_path: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
           - label: macOS Intel (DMG)
             platform: macos-latest
             rust_target: x86_64-apple-darwin
             cache_key: macos-intel
             args: --target x86_64-apple-darwin --config src-tauri/tauri.ci.json --bundles dmg
+            artifact_path: src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
           - label: Linux x64 (AppImage)
             platform: ubuntu-22.04
             rust_target: ''
             cache_key: linux-x64
             args: --config src-tauri/tauri.ci.json --bundles appimage
+            artifact_path: src-tauri/target/release/bundle/appimage/*.AppImage
 
     steps:
       - name: Checkout
@@ -120,7 +146,21 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build and upload ${{ matrix.label }}
+      - name: Build candidate ${{ matrix.label }}
+        if: github.event_name == 'workflow_dispatch'
+        run: npm run tauri:build -- ${{ matrix.args }}
+
+      - name: Upload candidate ${{ matrix.label }}
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdular-${{ matrix.cache_key }}-candidate-${{ github.sha }}
+          path: ${{ matrix.artifact_path }}
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Build and upload release ${{ matrix.label }}
+        if: github.event_name == 'push' && github.ref_type == 'tag'
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

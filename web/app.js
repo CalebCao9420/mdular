@@ -34,20 +34,17 @@ async function init() {
     });
   }
   const shellWorkspaceBound = await initDesktopShell();
+  await initDesktopSettings(shellWorkspaceBound);
   if (navigator.storage && navigator.storage.persist) {
     const persisted = await navigator.storage.persist();
     log("Storage persisted:", persisted);
   }
   const savedDirHandle = await getSavedRootDirHandle();
-  const hasSavedLocalDir = !shellWorkspaceBound && savedDirHandle instanceof FileSystemDirectoryHandle;
+  const hasSavedLocalDir = !shellWorkspaceBound && isBrowserDirectoryHandle(savedDirHandle);
   if (shellWorkspaceBound || hasSavedLocalDir) {
     isMemFS = false;
-    document.getElementById("open-folder").style.display = "none";
-    const openFolderBtn = document.getElementById("open-folder-btn");
-    if (openFolderBtn) {
-      openFolderBtn.style.display = "none";
-    }
-  } else if (typeof window.showDirectoryPicker === "function") {
+    hideWorkspaceOpenControls();
+  } else if (typeof isTauriHost === "function" && isTauriHost() || typeof window.showDirectoryPicker === "function") {
     document.getElementById("open-folder").style.display = "flex";
     isMemFS = true;
   } else {
@@ -75,9 +72,7 @@ Please, reopen the folder again and check "Allow on every visit" checkbox`);
     log(`Files loaded in ${performance.now() - perf2}ms`);
   } else {
     let perf2 = performance.now();
-    if (!await exists("/Help.md")) {
-      await write("/Help.md", getToolkitHelpIntro() + getHelpContent());
-    }
+    await ensureWorkspaceHelpFile();
     files = await loadLocalFiles(null);
     log(`Tauri workspace loaded in ${performance.now() - perf2}ms`);
   }
@@ -257,29 +252,71 @@ async function applyWorkspaceDirectory(dirHandle) {
     await new Promise((r) => setTimeout(r, 50));
   }
   await saveDirectoryHandle(dirHandle);
-  await write("/Help.md", getToolkitHelpIntro() + getHelpContent());
+  await ensureWorkspaceHelpFile();
   files = await loadLocalFiles(dirHandle);
   isMemFS = false;
+  hideWorkspaceOpenControls();
+}
+function hideWorkspaceOpenControls() {
   document.getElementById("open-folder").style.display = "none";
   const openFolderBtn = document.getElementById("open-folder-btn");
   if (openFolderBtn) {
-    openFolderBtn.style.display = "none";
+    openFolderBtn.style.display = "";
   }
   if (typeof removeWorkspaceHintBanner === "function") {
     removeWorkspaceHintBanner();
   }
 }
-async function openDir() {
-  let dirHandle = null;
+async function ensureWorkspaceHelpFile() {
   try {
-    dirHandle = await window.showDirectoryPicker({ "mode": "readwrite" });
+    if (await exists("/Help.md")) {
+      return;
+    }
+    await write("/Help.md", getAppHelpIntro() + getHelpContent());
   } catch (error) {
-    if (error instanceof TypeError) {
+    logError("Unable to initialize workspace Help.md:", error);
+    showToast("Workspace opened, but Help.md could not be initialized.");
+  }
+}
+async function applyTauriWorkspaceDirectory(path) {
+  while (isLoadingLocalFiles) {
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  await ensureWorkspaceHelpFile();
+  files = await loadLocalFiles(null);
+  isMemFS = false;
+  hideWorkspaceOpenControls();
+  showToast("\u5DF2\u7ED1\u5B9A\u5DE5\u4F5C\u533A\uFF1A" + path);
+}
+async function openDir() {
+  const tauriHost = typeof isTauriHost === "function" && isTauriHost();
+  try {
+    if (tauriHost) {
+      const path = await selectTauriWorkspaceDirectory();
+      if (path === null) {
+        return;
+      }
+      await applyTauriWorkspaceDirectory(path);
+    } else {
+      if (typeof window.showDirectoryPicker !== "function") {
+        throw new TypeError("Browser directory picker unavailable");
+      }
+      const dirHandle = await window.showDirectoryPicker({ "mode": "readwrite" });
+      await applyWorkspaceDirectory(dirHandle);
+    }
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      return;
+    }
+    if (tauriHost) {
+      logError("Unable to open Tauri workspace:", error);
+      const detail = error instanceof Error ? error.message : String(error);
+      alert("Unable to open folder.\n\n" + detail);
+    } else if (error instanceof TypeError) {
       alert("For now only Chrome browser supports local folders :(");
     }
     return;
   }
-  await applyWorkspaceDirectory(dirHandle);
   renderSidebar();
   void loadWorkspaceConfig().then(() => detectVcsRepo());
   await initPlugins();
@@ -389,7 +426,7 @@ async function removeSavedRootDirHandle() {
 }
 async function getRootDirHandle() {
   const savedDirHandle = await getSavedRootDirHandle();
-  if (!(savedDirHandle instanceof FileSystemDirectoryHandle) || !opfsIsFullyUsable()) {
+  if (!isBrowserDirectoryHandle(savedDirHandle) || !opfsIsFullyUsable()) {
     return await getTemporaryStorageDirHandle();
   }
   return savedDirHandle;

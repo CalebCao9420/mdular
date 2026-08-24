@@ -19,6 +19,22 @@ async function tauriInvoke(cmd, args) {
   }
   return invoke(cmd, args);
 }
+async function selectTauriWorkspaceDirectory() {
+  if (!isTauriHost()) {
+    throw new Error("Tauri directory picker unavailable outside the desktop host");
+  }
+  const boundPath = await tauriInvoke("workspace_pick_and_bind");
+  if (boundPath === null) {
+    return null;
+  }
+  if (typeof boundPath !== "string" || boundPath.length === 0) {
+    throw new Error("Desktop host did not bind the selected workspace");
+  }
+  launcherWorkspacePath = boundPath;
+  setTauriWorkspaceBound(true);
+  removeWorkspaceHintBanner();
+  return boundPath;
+}
 function applyAppShellMode(shell) {
   if (shell) {
     document.documentElement.classList.add("app-shell");
@@ -94,13 +110,11 @@ async function initTauriShell(hint) {
   }
   initUpdateDownloadPanel();
   applyAppShellMode(true);
-  let path = (hint?.workspacePath || "").trim();
-  if (!path) {
-    try {
-      const fromRust = await tauriInvoke("workspace_get_path");
-      path = (fromRust || "").trim();
-    } catch {
-    }
+  let path = "";
+  try {
+    const fromRust = await tauriInvoke("workspace_get_path");
+    path = (fromRust || "").trim();
+  } catch {
   }
   if (path) {
     launcherWorkspacePath = path;
@@ -108,7 +122,7 @@ async function initTauriShell(hint) {
   if (hint?.plugins && Array.isArray(hint.plugins)) {
     launcherPluginIds = hint.plugins.filter((id) => typeof id === "string" && id.trim().length > 0).map((id) => id.trim());
   }
-  log("Tauri shell \xB7 workspace:", path || "(none \u2014 restart with -Folder)");
+  log("Tauri shell \xB7 workspace:", path || "(none \u2014 use Open Folder)");
   if (path) {
     launcherWorkspacePath = path;
     setTauriWorkspaceBound(true);
@@ -316,6 +330,7 @@ Object.assign(globalThis, {
   getLauncherPlugins,
   isTauriHost,
   tauriInvoke,
+  selectTauriWorkspaceDirectory,
   removeWorkspaceHintBanner,
   __appUpdateHud
 });
