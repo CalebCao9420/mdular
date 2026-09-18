@@ -256,11 +256,23 @@ function handleUpdateHudPayload(payload) {
       hud.setProgress(payload.percent ?? 0, payload.message || "\u6B63\u5728\u4E0B\u8F7D\u2026", { indeterminate });
       break;
     }
+    case "preparing":
+      hud.setProgress(100, payload.message || "\u6B63\u5728\u4FDD\u62A4\u672A\u4FDD\u5B58\u5185\u5BB9\u2026", {
+        version: payload.version,
+        indeterminate: true
+      });
+      break;
     case "installing":
       hud.setProgress(100, "\u4E0B\u8F7D\u5B8C\u6210\uFF0C\u6B63\u5728\u5B89\u88C5\u2026", { version: payload.version, installing: true });
       break;
     case "done":
-      hud.setProgress(100, "\u5B89\u88C5\u5B8C\u6210\uFF0C\u6B63\u5728\u91CD\u542F\u2026", { version: payload.version, installing: true });
+      hud.setProgress(100, payload.message || "\u5B89\u88C5\u5B8C\u6210\uFF0C\u6B63\u5728\u91CD\u542F\u2026", {
+        version: payload.version,
+        installing: true
+      });
+      break;
+    case "blocked":
+      hud.showError(payload.message || "\u5E94\u7528\u72B6\u6001\u5C1A\u672A\u5B89\u5168\u4FDD\u5B58\uFF0C\u66F4\u65B0\u5DF2\u53D6\u6D88\u3002");
       break;
     case "error":
       hud.showError(payload.message || "\u672A\u77E5\u9519\u8BEF");
@@ -271,6 +283,33 @@ function handleUpdateHudPayload(payload) {
 }
 function __appUpdateHud(payload) {
   handleUpdateHudPayload(payload);
+}
+function legacyPrepareRestartResult() {
+  const reasons = [];
+  if ("undefined" !== typeof isSaving && isSaving || "undefined" !== typeof isMessingWithCurrentEditor && isMessingWithCurrentEditor) {
+    reasons.push({ kind: "save-in-progress" });
+  }
+  const editors = [
+    "undefined" === typeof editor ? null : editor,
+    "undefined" === typeof editor2 ? null : editor2
+  ];
+  if (editors.some((candidate) => candidate && !candidate.isClean()) || "undefined" !== typeof chatIsClean && !chatIsClean) {
+    reasons.push({ kind: "unsaved-changes" });
+  }
+  return 0 === reasons.length ? { kind: "ready" } : { kind: "blocked", reasons };
+}
+async function respondToLegacyRestartRequest(payload) {
+  if (!payload || "object" !== typeof payload || Array.isArray(payload)) {
+    return;
+  }
+  const request = payload;
+  if ("string" !== typeof request.requestId || !/^restart-[1-9][0-9]*$/u.test(request.requestId) || 128 < request.requestId.length || 6e4 !== request.timeoutMs) {
+    return;
+  }
+  await tauriInvoke("updater_respond_prepare_restart", {
+    requestId: request.requestId,
+    result: legacyPrepareRestartResult()
+  });
 }
 function initUpdateDownloadPanel() {
   ensureUpdateDownloadHud();
@@ -291,6 +330,12 @@ function initUpdateDownloadPanel() {
       total: p.total
     });
   });
+  void listen("update-download-preparing", (event) => {
+    handleUpdateHudPayload({
+      phase: "preparing",
+      ...event.payload
+    });
+  });
   void listen("update-download-installing", (event) => {
     handleUpdateHudPayload({
       phase: "installing",
@@ -298,12 +343,26 @@ function initUpdateDownloadPanel() {
     });
   });
   void listen("update-download-done", (event) => {
-    handleUpdateHudPayload({ phase: "done", ...event.payload });
+    handleUpdateHudPayload({
+      phase: "done",
+      ...event.payload
+    });
+  });
+  void listen("update-download-blocked", (event) => {
+    handleUpdateHudPayload({
+      phase: "blocked",
+      ...event.payload
+    });
   });
   void listen("update-download-error", (event) => {
     handleUpdateHudPayload({
       phase: "error",
       message: event.payload.message || "\u672A\u77E5\u9519\u8BEF"
+    });
+  });
+  void listen("update-prepare-restart", (event) => {
+    void respondToLegacyRestartRequest(event.payload).catch(() => {
+      handleUpdateHudPayload({ phase: "error", message: "\u65E0\u6CD5\u786E\u8BA4\u91CD\u542F\u524D\u7684\u6587\u6863\u72B6\u6001\u3002" });
     });
   });
 }

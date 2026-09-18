@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "id": "mdular.kanban",
+  "name": "Kanban",
+  "version": "0.1.0",
+  "entry": "kanban.js",
+  "description": "Official issues board, workflow configuration, filtering and Chat archive target.",
+  "activationEvents": [
+    "onStartup"
+  ],
+  "permissions": [
+    "commands",
+    "extensions.register",
+    "navigation.openMarkdown",
+    "storage.workspace",
+    "ui.views",
+    "workspace.readMarkdown",
+    "workspace.readText",
+    "workspace.modifyMarkdown",
+    "workspace.modifyText",
+    "workspace.writeTextBatch",
+    "workspace.watchMarkdown"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "id": "mdular.kanban.open",
+        "title": "Kanban: Open Issues",
+        "defaultKeybindings": ["Mod+Shift+B"]
+      },
+      {
+        "id": "mdular.kanban.new-issue",
+        "title": "Kanban: New Issue"
+      },
+      {
+        "id": "mdular.kanban.configure",
+        "title": "Kanban: Configure Workflow"
+      }
+    ],
+    "views": [
+      {
+        "id": "kanban",
+        "title": "Kanban",
+        "location": "editor-pane"
+      }
+    ]
+  }
+}

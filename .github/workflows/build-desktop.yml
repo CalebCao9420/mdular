@@ -1,18 +1,3 @@
-# Build and collect every supported desktop installer on GitHub-hosted runners.
-#
-# Candidate: Actions -> "Build Desktop" -> Run workflow. This uploads
-# short-lived workflow artifacts and never creates a GitHub Release.
-# Release: push a version tag matching app.manifest.json, such as v1.2.3.
-#
-# Outputs as candidate artifacts or in one draft GitHub Release:
-#   - Windows x64 -> NSIS installer
-#   - macOS Apple Silicon + Intel -> DMG installers
-#   - Linux x64 -> AppImage
-#
-# Windows bundles are unsigned. macOS bundles use an ad-hoc signature but are
-# not notarized. The CI override also disables Tauri updater artifacts until
-# release signing is configured.
-
 name: Build Desktop
 
 on:
@@ -26,9 +11,9 @@ permissions:
 
 jobs:
   check:
-    name: npm + Rust checks
+    name: Repository checks
     runs-on: ubuntu-22.04
-    timeout-minutes: 25
+    timeout-minutes: 35
 
     steps:
       - name: Checkout
@@ -40,19 +25,22 @@ jobs:
           node-version: lts/*
           cache: npm
 
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Verify release configuration
+        run: node scripts/release-artifacts.mjs validate-config --root .
+
       - name: Verify release tag matches app manifest
         if: github.event_name == 'push' && github.ref_type == 'tag'
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: npm run check:release-version
 
-      - name: Install dependencies
-        run: npm ci
-
       - name: Run repository checks
         run: npm run check
 
-      - name: Install Linux dependencies for Rust tests
+      - name: Install Linux desktop dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -63,59 +51,70 @@ jobs:
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
 
-      - name: Rust test cache
+      - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
           key: desktop-check
 
-      - name: Run desktop host tests
-        run: cargo test --manifest-path src-tauri/Cargo.toml
+      - name: Check Rust formatting
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
 
-  build:
-    name: ${{ matrix.label }}
+      - name: Run desktop host tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml --all-targets
+
+      - name: Run Rust lints
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+
+  candidate-build:
+    name: Candidate - ${{ matrix.label }}
+    if: github.event_name == 'workflow_dispatch'
     needs: check
-    runs-on: ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
-    permissions:
-      contents: write
 
     strategy:
       fail-fast: false
       matrix:
         include:
-          - label: Windows x64 (NSIS)
-            platform: windows-latest
+          - label: Windows x64
+            runner: windows-latest
             rust_target: ''
             cache_key: windows-x64
             args: --config src-tauri/tauri.ci.json --bundles nsis
+            bundle_root: src-tauri/target/release/bundle
             artifact_path: src-tauri/target/release/bundle/nsis/*.exe
-          - label: macOS Apple Silicon (DMG)
-            platform: macos-latest
+          - label: macOS Apple Silicon
+            runner: macos-latest
             rust_target: aarch64-apple-darwin
             cache_key: macos-apple-silicon
             args: --target aarch64-apple-darwin --config src-tauri/tauri.ci.json --bundles dmg
+            bundle_root: src-tauri/target/aarch64-apple-darwin/release/bundle
             artifact_path: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
-          - label: macOS Intel (DMG)
-            platform: macos-latest
+          - label: macOS Intel
+            runner: macos-latest
             rust_target: x86_64-apple-darwin
             cache_key: macos-intel
             args: --target x86_64-apple-darwin --config src-tauri/tauri.ci.json --bundles dmg
+            bundle_root: src-tauri/target/x86_64-apple-darwin/release/bundle
             artifact_path: src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
-          - label: Linux x64 (AppImage)
-            platform: ubuntu-22.04
+          - label: Linux x64
+            runner: ubuntu-22.04
             rust_target: ''
             cache_key: linux-x64
             args: --config src-tauri/tauri.ci.json --bundles appimage
+            bundle_root: src-tauri/target/release/bundle
             artifact_path: src-tauri/target/release/bundle/appimage/*.AppImage
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Install Linux dependencies
-        if: matrix.platform == 'ubuntu-22.04'
+      - name: Install Linux desktop dependencies
+        if: matrix.runner == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -134,24 +133,30 @@ jobs:
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.rust_target }}
+
+      - name: Install cross target
+        if: matrix.rust_target != ''
+        run: rustup target add ${{ matrix.rust_target }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
-          key: ${{ matrix.cache_key }}
+          key: candidate-${{ matrix.cache_key }}
 
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build candidate ${{ matrix.label }}
-        if: github.event_name == 'workflow_dispatch'
+      - name: Run runner-native host tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml --all-targets
+
+      - name: Build candidate
         run: npm run tauri:build -- ${{ matrix.args }}
 
-      - name: Upload candidate ${{ matrix.label }}
-        if: github.event_name == 'workflow_dispatch'
+      - name: Prove candidate has no updater artifacts
+        run: node scripts/release-artifacts.mjs assert-candidate --search-root "${{ matrix.bundle_root }}"
+
+      - name: Upload candidate installer
         uses: actions/upload-artifact@v4
         with:
           name: mdular-${{ matrix.cache_key }}-candidate-${{ github.sha }}
@@ -159,20 +164,233 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Build and upload release ${{ matrix.label }}
-        if: github.event_name == 'push' && github.ref_type == 'tag'
-        uses: tauri-apps/tauri-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: v__VERSION__
-          releaseName: v__VERSION__
-          releaseBody: |
-            Desktop builds for this version.
+  release-build:
+    name: Signed release - ${{ matrix.label }}
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    needs: check
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 75
+    environment: release
+    env:
+      HAS_SIGNING_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD != '' }}
 
-            - **Windows**: x64 NSIS installer (`.exe`). Unsigned; Windows SmartScreen may warn.
-            - **macOS**: DMG for Apple Silicon and Intel. Ad-hoc signed but not notarized; first open may require approval in Privacy & Security.
-            - **Linux**: x64 AppImage. Run `chmod +x` before launching.
-          releaseDraft: true
-          prerelease: false
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Windows x64
+            runner: windows-latest
+            rust_target: ''
+            cache_key: windows-x64
+            platform_key: windows-x86_64
+            bundle_type: nsis
+            args: --config src-tauri/tauri.release.json --bundles nsis
+            bundle_root: src-tauri/target/release/bundle
+          - label: macOS Apple Silicon
+            runner: macos-latest
+            rust_target: aarch64-apple-darwin
+            cache_key: macos-apple-silicon
+            platform_key: darwin-aarch64
+            bundle_type: app
+            args: --target aarch64-apple-darwin --config src-tauri/tauri.release.json --bundles dmg
+            bundle_root: src-tauri/target/aarch64-apple-darwin/release/bundle
+          - label: macOS Intel
+            runner: macos-latest
+            rust_target: x86_64-apple-darwin
+            cache_key: macos-intel
+            platform_key: darwin-x86_64
+            bundle_type: app
+            args: --target x86_64-apple-darwin --config src-tauri/tauri.release.json --bundles dmg
+            bundle_root: src-tauri/target/x86_64-apple-darwin/release/bundle
+          - label: Linux x64
+            runner: ubuntu-22.04
+            rust_target: ''
+            cache_key: linux-x64
+            platform_key: linux-x86_64
+            bundle_type: appimage
+            args: --config src-tauri/tauri.release.json --bundles appimage
+            bundle_root: src-tauri/target/release/bundle
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Linux desktop dependencies
+        if: matrix.runner == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libfuse2 \
+            xdg-utils
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cross target
+        if: matrix.rust_target != ''
+        run: rustup target add ${{ matrix.rust_target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          key: release-${{ matrix.cache_key }}
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Fail closed when updater signing key is absent
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: node scripts/release-artifacts.mjs validate-signing-env
+
+      - name: Build signed release with unencrypted updater key
+        if: env.HAS_SIGNING_PASSWORD != 'true'
+        uses: tauri-apps/tauri-action@action-v1.0.0
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        with:
           args: ${{ matrix.args }}
+          uploadUpdaterJson: false
+          uploadWorkflowArtifacts: false
+
+      - name: Build signed release with encrypted updater key
+        if: env.HAS_SIGNING_PASSWORD == 'true'
+        uses: tauri-apps/tauri-action@action-v1.0.0
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          args: ${{ matrix.args }}
+          uploadUpdaterJson: false
+          uploadWorkflowArtifacts: false
+
+      - name: Collect signed updater inventory
+        run: >-
+          node scripts/release-artifacts.mjs collect
+          --platform "${{ matrix.platform_key }}"
+          --bundle-type "${{ matrix.bundle_type }}"
+          --search-root "${{ matrix.bundle_root }}"
+          --output release-inventory
+
+      - name: Upload isolated signed inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdular-signed-${{ matrix.platform_key }}-${{ github.run_id }}
+          path: release-inventory
+          if-no-files-found: error
+          retention-days: 7
+
+  release-aggregate:
+    name: Verify and assemble one draft release
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    needs: release-build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    environment: release
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install Linux desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          key: release-signature-verifier
+
+      - name: Download all signed inventories without merging them
+        uses: actions/download-artifact@v4
+        with:
+          pattern: mdular-signed-*-${{ github.run_id }}
+          path: signed-input
+          merge-multiple: false
+
+      - name: Aggregate exact four-platform manifest
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: >-
+          node scripts/release-artifacts.mjs aggregate
+          --input signed-input
+          --output release-output
+          --tag "$RELEASE_TAG"
+          --notes-file .github/release-notes.md
+
+      - name: Cryptographically verify every updater artifact
+        run: >-
+          cargo run --quiet --manifest-path src-tauri/Cargo.toml
+          --example verify_updater_signatures --
+          --plan release-output/signature-verification.json
+          --config src-tauri/tauri.conf.json
+
+      - name: Upload release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdular-release-evidence-${{ github.run_id }}
+          path: |
+            release-output/latest.json
+            release-output/release-assets.json
+            release-output/signature-verification.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create or update Draft only
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft > draft-state.txt 2>/dev/null; then
+            if [[ "$(tr -d '\r\n' < draft-state.txt)" != "true" ]]; then
+              echo "Refusing to modify a non-Draft release for $RELEASE_TAG" >&2
+              exit 1
+            fi
+            gh release edit "$RELEASE_TAG" \
+              --draft=true \
+              --title "$RELEASE_TAG" \
+              --notes-file .github/release-notes.md
+          else
+            gh release create "$RELEASE_TAG" \
+              --draft \
+              --verify-tag \
+              --title "$RELEASE_TAG" \
+              --notes-file .github/release-notes.md
+          fi
+          gh release upload "$RELEASE_TAG" \
+            release-output/assets/* \
+            release-output/latest.json \
+            --clobber

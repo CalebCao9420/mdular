@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "mdular.chat",
+  "name": "Chat",
+  "version": "0.1.0",
+  "entry": "chat.js",
+  "description": "Fast Markdown capture with completion, batch actions, and extensible archives.",
+  "activationEvents": [
+    "onStartup"
+  ],
+  "permissions": [
+    "commands",
+    "extensions.consume",
+    "extensions.register",
+    "ui.views",
+    "workspace.readMarkdown",
+    "workspace.modifyMarkdown",
+    "workspace.writeTextBatch",
+    "workspace.watchMarkdown"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "id": "mdular.chat.open",
+        "title": "Open Chat",
+        "defaultKeybindings": [
+          "Mod+Enter"
+        ]
+      },
+      {
+        "id": "mdular.chat.quick-capture",
+        "title": "Quick Capture to Chat",
+        "defaultKeybindings": [
+          "Mod+Shift+Enter"
+        ]
+      }
+    ],
+    "views": [
+      {
+        "id": "chat",
+        "title": "Chat",
+        "location": "editor-pane"
+      }
+    ]
+  }
+}

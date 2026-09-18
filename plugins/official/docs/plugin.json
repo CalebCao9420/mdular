@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "mdular.docs",
+  "name": "Docs",
+  "version": "0.1.0",
+  "entry": "docs.js",
+  "description": "Official reading, outline, frontmatter and document browsing tools.",
+  "activationEvents": [
+    "onStartup"
+  ],
+  "permissions": [
+    "commands",
+    "documents.editActive",
+    "documents.readActive",
+    "extensions.consume",
+    "extensions.register",
+    "navigation.openMarkdown",
+    "ui.documentHeader",
+    "ui.views",
+    "storage.workspace",
+    "workspace.readMarkdown",
+    "workspace.writeTextBatch",
+    "workspace.watchMarkdown"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "id": "mdular.docs.open-reader",
+        "title": "Docs: Open Reading View",
+        "defaultKeybindings": ["Mod+Shift+R"]
+      },
+      {
+        "id": "mdular.docs.open-outline",
+        "title": "Docs: Open Outline",
+        "defaultKeybindings": ["Mod+Shift+O"]
+      },
+      {
+        "id": "mdular.docs.browse",
+        "title": "Docs: Browse docs/",
+        "defaultKeybindings": ["Mod+Shift+D"]
+      },
+      {
+        "id": "mdular.docs.edit-frontmatter",
+        "title": "Docs: Edit Frontmatter"
+      }
+    ],
+    "documentHeaders": [
+      {
+        "id": "metadata",
+        "title": "Metadata"
+      }
+    ],
+    "views": [
+      {
+        "id": "docs",
+        "title": "Docs",
+        "location": "editor-pane"
+      }
+    ]
+  }
+}

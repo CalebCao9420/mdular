@@ -246,6 +246,26 @@ function collectRawTauriGlobals(sourceFile) {
   return Array.from(new Set(results));
 }
 
+const FORBIDDEN_OFFICIAL_PLUGIN_GLOBALS = new Set([
+  'document',
+  'localStorage',
+  'sessionStorage',
+  'window',
+]);
+
+function collectForbiddenOfficialPluginGlobals(sourceFile) {
+  const results = [];
+  function visit(node) {
+    if (ts.isIdentifier(node) && FORBIDDEN_OFFICIAL_PLUGIN_GLOBALS.has(node.text)) {
+      const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+      results.push({ line: position.line + 1, name: node.text });
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
+  return results;
+}
+
 function validatePublicPackageImport(sourceLayer, targetLayer, specifier) {
   if ('package' !== targetLayer.kind) { return null; }
   if ('package' === targetLayer.importKind && !targetLayer.isPublicEntry) {
@@ -286,7 +306,6 @@ function validateDependency(sourceLayer, targetLayer) {
   }
 
   if ('official-plugin' === sourceLayer.kind) {
-    if ('external' === targetLayer.kind) { return null; }
     if ('official-plugin' === targetLayer.kind && sourceLayer.name === targetLayer.name) {
       return null;
     }
@@ -324,6 +343,13 @@ export function checkRepository(rootPath = process.cwd()) {
 
     for (const line of collectRawTauriGlobals(sourceFile)) {
       errors.push(`${relativeSourcePath}:${line}: raw __TAURI__ global is forbidden`);
+    }
+    if ('official-plugin' === sourceLayer.kind) {
+      for (const global of collectForbiddenOfficialPluginGlobals(sourceFile)) {
+        errors.push(
+          `${relativeSourcePath}:${global.line}: official plugin may not access host global ${global.name}`,
+        );
+      }
     }
 
     for (const dependency of collectModuleSpecifiers(sourceFile)) {

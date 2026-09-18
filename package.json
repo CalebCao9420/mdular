@@ -15,15 +15,27 @@
     "check:app-metadata": "node scripts/sync-app-metadata.mjs --check",
     "check:release-version": "node scripts/check-release-version.mjs",
     "typecheck": "tsc --noEmit",
+    "typecheck:core": "tsc -p tsconfig.core.json",
     "typecheck:v2": "tsc -p tsconfig.v2.json",
     "check:static-assets": "node scripts/check-static-assets.mjs",
+    "test:runtime-bootstrap": "node --test scripts/tests/runtime-bootstrap.test.mjs",
     "check:architecture": "node scripts/check-v2-boundaries.mjs",
     "test:architecture": "node --test scripts/tests/check-v2-boundaries.test.mjs",
     "test:release-version": "node --test scripts/tests/check-release-version.test.mjs",
+    "test:release-artifacts": "node --test scripts/tests/release-artifacts.test.mjs",
+    "test:search-characterization": "node --test scripts/tests/search-characterization.test.mjs",
+    "test:templates-characterization": "node --test scripts/tests/templates-characterization.test.mjs",
+    "test:chat-characterization": "node --test scripts/tests/chat-characterization.test.mjs",
+    "test:docs-characterization": "node --test scripts/tests/docs-characterization.test.mjs",
+    "test:extended-markdown-characterization": "node --test scripts/tests/extended-markdown-characterization.test.mjs",
+    "test:media-characterization": "node --test scripts/tests/media-characterization.test.mjs",
+    "test:kanban-characterization": "node --test scripts/tests/kanban-characterization.test.mjs",
+    "test:vcs-characterization": "node --test scripts/tests/vcs-characterization.test.mjs",
     "test:desktop-workspace": "node --test scripts/tests/open-folder-hotfix.test.mjs",
     "test:markdown-rendering": "node --test scripts/tests/markdown-table-rendering.test.mjs",
+    "test:codemirror-spike": "node --test scripts/tests/codemirror-linked-doc.test.mjs",
     "test:v2": "node --test scripts/tests/v2-core-plugin.test.mjs",
-    "check": "npm run check:app-metadata && npm run typecheck && npm run typecheck:v2 && npm run check:static-assets && npm run test:architecture && npm run test:release-version && npm run test:desktop-workspace && npm run test:markdown-rendering && npm run test:v2 && npm run check:architecture",
+    "check": "npm run check:app-metadata && npm run typecheck && npm run typecheck:core && npm run typecheck:v2 && npm run check:static-assets && npm run test:runtime-bootstrap && npm run test:architecture && npm run test:release-version && npm run test:release-artifacts && npm run test:search-characterization && npm run test:templates-characterization && npm run test:chat-characterization && npm run test:docs-characterization && npm run test:extended-markdown-characterization && npm run test:media-characterization && npm run test:kanban-characterization && npm run test:vcs-characterization && npm run test:desktop-workspace && npm run test:markdown-rendering && npm run test:codemirror-spike && npm run test:v2 && npm run check:architecture",
     "tauri": "node scripts/sync-app-metadata.mjs && tauri",
     "tauri:dev": "node scripts/sync-app-metadata.mjs && tauri dev",
     "tauri:build": "node scripts/sync-app-metadata.mjs && tauri build",
@@ -38,7 +50,6 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
-    "@tauri-apps/plugin-process": "^2.3.1",
-    "@tauri-apps/plugin-updater": "^2.10.1"
+    "@tauri-apps/plugin-updater": "2.10.1"
   }
 }

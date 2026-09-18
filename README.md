@@ -74,6 +74,18 @@ npm run sync:app-metadata  # 将 app.manifest.json 同步到各宿主 manifest
 `package.json` 只负责依赖、workspace 和脚本。CI 会运行 `check:app-metadata`，阻止 Tauri、Cargo 和
 PWA manifest 中的派生值发生漂移。
 
+`src/index.html` 是 HTML 输入权威；`web/index.html`、`web/build-stamp.js`、
+`web/runtime-bootstrap.js` 和 `web/v2/` 都由 `npm run build` 生成，不应手改。迁移期间默认启动
+`legacy`，可用一次性环境变量启动 V2 诊断空壳（只影响当前进程，不回写设置）：
+
+```sh
+MDULAR_RUNTIME=v2 npm run tauri:dev       # macOS / Linux
+```
+
+```powershell
+$env:MDULAR_RUNTIME = 'v2'; npm run tauri:dev
+```
+
 从 Actions 手动运行 `Build Desktop` 会先执行完整检查，再并行构建四个平台并上传保留 7 天的
 candidate artifacts，不会创建 Release。推送与 `app.manifest.json` 版本一致的标签（例如 `v1.2.3`）后，
 同一 workflow 才创建 Draft Release；标签与 manifest 版本不一致时，发布门禁会在构建前失败。
@@ -86,6 +98,8 @@ macOS CI 产物使用 ad-hoc 临时签名，但未经过 Apple notarization。
 ```
 src/
 ├── app/ · chat/ · editor/ · files/     # Core
+├── index.html                           # HTML 输入权威
+├── runtime/                             # legacy / V2 启动路由
 ├── plugins/
 │   ├── api.ts                          # initPlugins
 │   ├── chat-archive.ts                 # Chat 归档注册表
@@ -93,6 +107,8 @@ src/
 │   └── kanban/                         # 看板 + To Issues
 ├── desktop/shell.ts                    # launcher hint · Tauri
 └── workspace/config.ts
+apps/         # V2 desktop / browser-preview composition roots
+packages/     # platform、Core 与 plugin contracts/runtime
 web/          # 构建产物 + 静态资源
 src-tauri/    # Tauri 桌面壳（Rust）
 launch.ps1 · start.bat · start-tauri.bat

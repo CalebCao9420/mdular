@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "mdular.media",
+  "name": "Media",
+  "version": "0.1.0",
+  "entry": "media.js",
+  "description": "Official bounded paste, drop and workspace media preview support.",
+  "activationEvents": [
+    "onStartup"
+  ],
+  "permissions": [
+    "editor.extensions",
+    "workspace.writeMedia"
+  ]
+}

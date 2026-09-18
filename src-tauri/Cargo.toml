@@ -1,6 +1,6 @@
 [package]
 name = "mdular"
-version = "0.0.5"
+version = "0.1.0"
 description = "A modular, local-first Markdown editor."
 authors = ["CalebCao9420"]
 license = "MIT"
@@ -20,8 +20,9 @@ tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 base64 = "0.22"
+sha2 = "0.10.9"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-updater = "2"
+tauri-plugin-updater = "=2.10.1"
 tauri-plugin-dialog = "2"
-tauri-plugin-process = "2"
+minisign-verify = "=0.2.5"

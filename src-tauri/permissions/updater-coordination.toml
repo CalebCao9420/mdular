@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "allow-updater-coordination"
+description = "Allows the active application root to answer one host-owned updater restart preparation request."
+commands.allow = ["updater_respond_prepare_restart"]

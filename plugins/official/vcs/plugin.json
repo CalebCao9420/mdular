@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "mdular.vcs",
+  "name": "Version Control",
+  "version": "0.1.0",
+  "entry": "vcs.js",
+  "description": "Official bounded Git/SVN status, diff and external-client integration.",
+  "activationEvents": [
+    "onStartup"
+  ],
+  "permissions": [
+    "commands",
+    "documents.readActive",
+    "process.vcs",
+    "storage.workspace",
+    "ui.views"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "id": "mdular.vcs.open",
+        "title": "Version Control: Open",
+        "defaultKeybindings": ["Mod+Shift+G"]
+      },
+      {
+        "id": "mdular.vcs.refresh",
+        "title": "Version Control: Refresh"
+      },
+      {
+        "id": "mdular.vcs.open-external",
+        "title": "Version Control: Open External Client"
+      }
+    ],
+    "views": [
+      {
+        "id": "vcs",
+        "title": "Version Control",
+        "location": "editor-pane"
+      }
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "mdular.templates",
+  "name": "Templates",
+  "version": "0.1.0",
+  "entry": "templates.js",
+  "description": "Previewed document templates and resumable project scaffolds.",
+  "activationEvents": [
+    "onStartup"
+  ],
+  "permissions": [
+    "commands",
+    "navigation.openMarkdown",
+    "storage.workspace",
+    "ui.views",
+    "workspace.writeTextBatch"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "id": "mdular.templates.new-document",
+        "title": "New from Template",
+        "defaultKeybindings": [
+          "Mod+Shift+N"
+        ]
+      },
+      {
+        "id": "mdular.templates.scaffold",
+        "title": "Create Project Scaffold"
+      },
+      {
+        "id": "mdular.templates.manage",
+        "title": "Manage Templates"
+      }
+    ],
+    "views": [
+      {
+        "id": "templates",
+        "title": "Templates",
+        "location": "editor-pane"
+      }
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "@mdular/web-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@mdular/platform": "0.0.0"
+  }
+}

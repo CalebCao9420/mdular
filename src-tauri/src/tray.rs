@@ -140,7 +140,7 @@ fn open_path_in_file_manager(path: &std::path::Path) -> Result<(), String> {
             .arg(path)
             .spawn()
             .map_err(|e| e.to_string())?;
-        return Ok(());
+        Ok(())
     }
     #[cfg(target_os = "macos")]
     {
@@ -148,7 +148,7 @@ fn open_path_in_file_manager(path: &std::path::Path) -> Result<(), String> {
             .arg(path)
             .spawn()
             .map_err(|e| e.to_string())?;
-        return Ok(());
+        Ok(())
     }
     #[cfg(all(unix, not(target_os = "macos")))]
     {
@@ -156,7 +156,7 @@ fn open_path_in_file_manager(path: &std::path::Path) -> Result<(), String> {
             .arg(path)
             .spawn()
             .map_err(|e| e.to_string())?;
-        return Ok(());
+        Ok(())
     }
     #[cfg(not(any(windows, unix)))]
     {

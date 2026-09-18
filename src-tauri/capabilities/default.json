@@ -7,9 +7,10 @@
   ],
   "permissions": [
     "core:default",
+    "core:window:allow-destroy",
     "shell:default",
+    "allow-runtime-mode",
     "allow-workspace-io",
-    "updater:default",
-    "process:default"
+    "allow-updater-coordination"
   ]
 }

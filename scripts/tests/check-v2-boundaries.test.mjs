@@ -67,6 +67,20 @@ test('allows official plugins to use plugin-sdk but not core', () => {
   assert.match(rejected.errors[0], /may only use its own code and plugin-sdk/u);
 });
 
+test('rejects host DOM globals and undeclared external packages in official plugins', () => {
+  const result = checkFixture({
+    'plugins/official/docs/src/index.ts':
+      "import 'yaml';\n" +
+      "document.body.textContent = window.location.href;\n" +
+      "localStorage.setItem('key', 'value');\n",
+  });
+  assert.equal(result.errors.length, 4);
+  assert.match(result.errors.join('\n'), /host global document/u);
+  assert.match(result.errors.join('\n'), /host global window/u);
+  assert.match(result.errors.join('\n'), /host global localStorage/u);
+  assert.match(result.errors.join('\n'), /may only use its own code and plugin-sdk/u);
+});
+
 test('allows only package subpaths declared in exports', () => {
   const allowed = checkFixture({
     'packages/core/package.json': packageManifest('@mdular/core', {

@@ -5,6 +5,16 @@ type CodeMirrorEditor = any;
 declare const __APP_NAME__: string;
 declare const __APP_WORKSPACE_CONFIG_PATH__: string;
 
+interface Window {
+  COMMIT_HASH?: string;
+  __TAURI__?: unknown;
+  __APP_RUNTIME__?: Readonly<{
+    mode: 'legacy' | 'v2';
+    source: 'environment' | 'appConfig' | 'default' | 'failSafe';
+    diagnostic?: string;
+  }>;
+}
+
 declare var editor: CodeMirrorEditor;
 declare var editor2: CodeMirrorEditor;
 declare var currentEditor: CodeMirrorEditor | null;
@@ -13,9 +23,16 @@ declare var files: Record<string, any>;
 declare var isChat: boolean;
 declare var isMemFS: boolean;
 declare var isLoadingLocalFiles: boolean;
+declare var isSaving: boolean;
+declare var isMessingWithCurrentEditor: boolean;
+declare var chatIsClean: boolean;
 
 declare function log(...args: unknown[]): void;
 declare function logError(...args: unknown[]): void;
+declare function init(): void;
+declare function initEditor(textarea: HTMLElement | null): CodeMirrorEditor;
+declare function initReading(): void;
+declare function initNewFileTemplates(): void;
 declare function getAppHelpIntro(): string;
 declare function appStorageKey(key: string): string;
 

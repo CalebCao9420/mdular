@@ -146,6 +146,7 @@ test('desktop settings persist one default workspace without accepting a fronten
   const rustSource = readProjectFile('src-tauri/src/lib.rs');
   const permissionSource = readProjectFile('src-tauri/permissions/workspace-io.toml');
   const indexSource = readProjectFile('web/index.html');
+  const runtimeSource = readProjectFile('src/runtime/runtime-bootstrap.ts');
   const offlineSource = readProjectFile('web/offline.js');
 
   assert.match(appSource, /await initDesktopSettings\(shellWorkspaceBound\)/u);
@@ -172,7 +173,9 @@ test('desktop settings persist one default workspace without accepting a fronten
   ]) {
     assert.match(permissionSource, new RegExp(`"${command}"`, 'u'));
   }
-  assert.match(indexSource, /src="desktop-settings\.js/u);
+  assert.match(indexSource, /src="runtime-bootstrap\.js/u);
+  assert.doesNotMatch(indexSource, /src="desktop-settings\.js/u);
+  assert.match(runtimeSource, /'desktop-settings\.js'/u);
   assert.match(indexSource, /id="desktop-settings-btn"/u);
   assert.match(indexSource, /id="desktop-settings-open-on-startup"/u);
   assert.match(offlineSource, /'\/desktop-settings\.js'/u);
@@ -192,15 +195,38 @@ test('workspace bootstrap uses the defined help intro and preserves Open Folder 
   assert.match(appSource, /Help\.md is a convenience seed[\s\S]*logError/u);
 });
 
-test('manual desktop builds upload candidates while tags alone create releases', () => {
+test('candidate and tag workflows preserve the secret and Draft-only release boundary', () => {
   const workflowSource = readProjectFile('.github/workflows/build-desktop.yml');
+  const candidateStart = workflowSource.indexOf('  candidate-build:');
+  const releaseStart = workflowSource.indexOf('  release-build:');
+  const aggregateStart = workflowSource.indexOf('  release-aggregate:');
+  assert.notEqual(candidateStart, -1);
+  assert.ok(releaseStart > candidateStart);
+  assert.ok(aggregateStart > releaseStart);
 
-  assert.match(workflowSource, /Build candidate[\s\S]*github\.event_name == 'workflow_dispatch'/u);
-  assert.match(workflowSource, /uses: actions\/upload-artifact@v4/u);
-  assert.match(workflowSource, /retention-days: 7/u);
-  assert.match(workflowSource, /cargo test --manifest-path src-tauri\/Cargo\.toml/u);
-  assert.match(
-    workflowSource,
-    /Build and upload release[\s\S]*github\.event_name == 'push' && github\.ref_type == 'tag'/u,
+  const candidate = workflowSource.slice(candidateStart, releaseStart);
+  const release = workflowSource.slice(releaseStart, aggregateStart);
+  const aggregate = workflowSource.slice(aggregateStart);
+  assert.match(candidate, /github\.event_name == 'workflow_dispatch'/u);
+  assert.match(candidate, /tauri\.ci\.json/u);
+  assert.match(candidate, /assert-candidate/u);
+  assert.match(candidate, /cargo test --manifest-path src-tauri\/Cargo\.toml --all-targets/u);
+  assert.match(candidate, /uses: actions\/upload-artifact@v4/u);
+  assert.doesNotMatch(candidate, /secrets\.|GH_TOKEN|tauri-action|gh release/u);
+
+  assert.match(release, /github\.event_name == 'push' && github\.ref_type == 'tag'/u);
+  assert.equal(
+    [...release.matchAll(/uses: tauri-apps\/tauri-action@action-v1\.0\.0/gu)].length,
+    2,
   );
+  assert.equal([...release.matchAll(/platform_key:/gu)].length, 4);
+  assert.match(release, /uploadUpdaterJson: false/u);
+  assert.match(release, /uploadWorkflowArtifacts: false/u);
+  assert.doesNotMatch(release, /\btagName:|\breleaseName:|\breleaseId:/u);
+
+  assert.match(aggregate, /needs: release-build/u);
+  assert.match(aggregate, /signature-verification\.json/u);
+  assert.match(aggregate, /Refusing to modify a non-Draft release/u);
+  assert.match(aggregate, /gh release create[\s\S]*--draft/u);
+  assert.doesNotMatch(aggregate, /gh release publish/u);
 });

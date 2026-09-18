@@ -8,5 +8,8 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     }
+  },
+  "dependencies": {
+    "@mdular/platform": "0.0.0"
   }
 }

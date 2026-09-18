@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "mdular.search",
+  "name": "Search",
+  "version": "0.1.0",
+  "entry": "search.js",
+  "description": "Private, incremental full-text search for authorized Markdown documents.",
+  "activationEvents": [
+    "onStartup"
+  ],
+  "permissions": [
+    "commands",
+    "extensions.consume",
+    "navigation.openMarkdown",
+    "storage.workspace",
+    "ui.views",
+    "workspace.readMarkdown",
+    "workspace.watchMarkdown"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "id": "mdular.search.open",
+        "title": "Search",
+        "defaultKeybindings": [
+          "Mod+K",
+          "Mod+P"
+        ]
+      }
+    ],
+    "views": [
+      {
+        "id": "search-results",
+        "title": "Search",
+        "location": "editor-pane"
+      }
+    ]
+  }
+}

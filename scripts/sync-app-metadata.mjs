@@ -34,7 +34,7 @@ function updateJson(relativePath, transform) {
 
 function replaceHtmlValue(source, pattern, replacement, label) {
   if (!pattern.test(source)) {
-    throw new Error(`Could not find ${label} in web/index.html`);
+    throw new Error(`Could not find ${label} in src/index.html`);
   }
   return source.replace(pattern, replacement);
 }
@@ -85,9 +85,11 @@ function checkBrandNeutralImplementation() {
     'web/lib/theme-studio.css',
   ];
   const files = [];
+  const metadataManagedFiles = new Set(['src/index.html']);
   for (const root of roots) { collectFiles(root, files); }
   const brandPattern = new RegExp(metadata.name.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&'), 'iu');
   for (const relativePath of files) {
+    if (metadataManagedFiles.has(relativePath)) { continue; }
     if (brandPattern.test(readFileSync(resolve(projectRoot, relativePath), 'utf8'))) {
       brandLeaks.push(relativePath);
     }
@@ -135,7 +137,7 @@ updateJson('web/manifest.json', (manifest) => {
   return manifest;
 });
 
-let indexHtml = readFileSync(resolve(projectRoot, 'web/index.html'), 'utf8');
+let indexHtml = readFileSync(resolve(projectRoot, 'src/index.html'), 'utf8');
 indexHtml = replaceHtmlValue(
   indexHtml,
   /(<meta name="description" content=")[^"]*(">)/u,
@@ -160,7 +162,7 @@ indexHtml = replaceHtmlValue(
   `<title>${metadata.name}</title>`,
   'document title',
 );
-updateFile('web/index.html', indexHtml);
+updateFile('src/index.html', indexHtml);
 
 let helpMarkdown = readFileSync(resolve(projectRoot, 'Help.md'), 'utf8');
 helpMarkdown = helpMarkdown.replace(/^# .*$/mu, `# ${metadata.name}`);

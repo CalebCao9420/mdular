@@ -1829,15 +1829,16 @@ dependencies = [
 
 [[package]]
 name = "mdular"
-version = "0.0.5"
+version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
+ "minisign-verify",
  "serde",
  "serde_json",
+ "sha2",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
- "tauri-plugin-process",
  "tauri-plugin-shell",
  "tauri-plugin-updater",
 ]
@@ -3572,16 +3573,6 @@ dependencies = [
  "thiserror 2.0.18",
  "toml 1.1.2+spec-1.1.0",
  "url",
-]
-
-[[package]]
-name = "tauri-plugin-process"
-version = "2.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d55511a7bf6cd70c8767b02c97bf8134fa434daf3926cfc1be0a0f94132d165a"
-dependencies = [
- "tauri",
- "tauri-plugin",
 ]
 
 [[package]]

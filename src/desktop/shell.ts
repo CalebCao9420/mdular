@@ -188,8 +188,10 @@ async function initTauriShell(hint: LauncherHint | null): Promise<boolean> {
 type UpdateHudPayload =
   | { phase: 'start'; version?: string }
   | { phase: 'progress'; percent: number; message: string; total?: number | null; downloaded?: number }
+  | { phase: 'preparing'; version?: string; message?: string }
   | { phase: 'installing'; version?: string }
-  | { phase: 'done'; version?: string }
+  | { phase: 'done'; version?: string; message?: string }
+  | { phase: 'blocked'; version?: string; message?: string }
   | { phase: 'error'; message: string };
 
 type UpdateHudController = {
@@ -350,11 +352,23 @@ function handleUpdateHudPayload(payload: UpdateHudPayload): void {
       hud.setProgress(payload.percent ?? 0, payload.message || '正在下载…', { indeterminate });
       break;
     }
+    case 'preparing':
+      hud.setProgress(100, payload.message || '正在保护未保存内容…', {
+        version: payload.version,
+        indeterminate: true,
+      });
+      break;
     case 'installing':
       hud.setProgress(100, '下载完成，正在安装…', { version: payload.version, installing: true });
       break;
     case 'done':
-      hud.setProgress(100, '安装完成，正在重启…', { version: payload.version, installing: true });
+      hud.setProgress(100, payload.message || '安装完成，正在重启…', {
+        version: payload.version,
+        installing: true,
+      });
+      break;
+    case 'blocked':
+      hud.showError(payload.message || '应用状态尚未安全保存，更新已取消。');
       break;
     case 'error':
       hud.showError(payload.message || '未知错误');
@@ -366,6 +380,45 @@ function handleUpdateHudPayload(payload: UpdateHudPayload): void {
 
 function __appUpdateHud(payload: UpdateHudPayload): void {
   handleUpdateHudPayload(payload);
+}
+
+function legacyPrepareRestartResult(): {
+  kind: 'ready' | 'blocked';
+  reasons?: Array<{ kind: 'save-in-progress' | 'unsaved-changes' }>;
+} {
+  const reasons: Array<{ kind: 'save-in-progress' | 'unsaved-changes' }> = [];
+  if (
+    ('undefined' !== typeof isSaving && isSaving) ||
+    ('undefined' !== typeof isMessingWithCurrentEditor && isMessingWithCurrentEditor)
+  ) {
+    reasons.push({ kind: 'save-in-progress' });
+  }
+  const editors = [
+    'undefined' === typeof editor ? null : editor,
+    'undefined' === typeof editor2 ? null : editor2,
+  ];
+  if (
+    editors.some((candidate) => candidate && !candidate.isClean()) ||
+    ('undefined' !== typeof chatIsClean && !chatIsClean)
+  ) {
+    reasons.push({ kind: 'unsaved-changes' });
+  }
+  return 0 === reasons.length ? { kind: 'ready' } : { kind: 'blocked', reasons };
+}
+
+async function respondToLegacyRestartRequest(payload: unknown): Promise<void> {
+  if (!payload || 'object' !== typeof payload || Array.isArray(payload)) { return; }
+  const request = payload as Record<string, unknown>;
+  if (
+    'string' !== typeof request.requestId ||
+    !/^restart-[1-9][0-9]*$/u.test(request.requestId) ||
+    128 < request.requestId.length ||
+    60_000 !== request.timeoutMs
+  ) { return; }
+  await tauriInvoke('updater_respond_prepare_restart', {
+    requestId: request.requestId,
+    result: legacyPrepareRestartResult(),
+  });
 }
 
 function initUpdateDownloadPanel(): void {
@@ -399,6 +452,12 @@ function initUpdateDownloadPanel(): void {
       total: p.total,
     });
   });
+  void listen('update-download-preparing', (event) => {
+    handleUpdateHudPayload({
+      phase: 'preparing',
+      ...(event.payload as { version?: string; message?: string }),
+    });
+  });
   void listen('update-download-installing', (event) => {
     handleUpdateHudPayload({
       phase: 'installing',
@@ -406,12 +465,26 @@ function initUpdateDownloadPanel(): void {
     });
   });
   void listen('update-download-done', (event) => {
-    handleUpdateHudPayload({ phase: 'done', ...(event.payload as { version?: string }) });
+    handleUpdateHudPayload({
+      phase: 'done',
+      ...(event.payload as { version?: string; message?: string }),
+    });
+  });
+  void listen('update-download-blocked', (event) => {
+    handleUpdateHudPayload({
+      phase: 'blocked',
+      ...(event.payload as { version?: string; message?: string }),
+    });
   });
   void listen('update-download-error', (event) => {
     handleUpdateHudPayload({
       phase: 'error',
       message: (event.payload as { message?: string }).message || '未知错误',
+    });
+  });
+  void listen('update-prepare-restart', (event) => {
+    void respondToLegacyRestartRequest(event.payload).catch(() => {
+      handleUpdateHudPayload({ phase: 'error', message: '无法确认重启前的文档状态。' });
     });
   });
 }

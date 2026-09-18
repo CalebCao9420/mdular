@@ -1,0 +1,7 @@
+[[permission]]
+identifier = "allow-runtime-mode"
+description = "Read or explicitly update the app-config runtime mode."
+commands.allow = [
+  "runtime_get_mode",
+  "runtime_set_mode",
+]
