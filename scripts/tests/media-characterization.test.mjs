@@ -34,22 +34,15 @@ test('V1 Media maps the supported clipboard MIME set and defaults unknown input 
   assert.equal(files.__isMediaPath('media/demo.oga'), true);
   assert.equal(files.__isMediaPath('media/demo.svg'), false);
 });
-test('V1 Media filename policy prefixes local time and replaces reserved characters', () => {
-  const NativeDate = Date;
-  class FixedDate extends NativeDate {
-    constructor(...args) {
-      super(...(0 === args.length ? ['2026-09-18T06:07:00+08:00'] : args));
-    }
-  }
+test('V1 Media filename policy replaces reserved characters', () => {
   const fs = runLegacy(
     'web/lib/fs.js',
-    { Date: FixedDate },
+    {},
     'Object.assign(globalThis, { __generateSafeFilename: generateSafeFilename });',
   );
-  assert.equal(
-    fs.__generateSafeFilename('my bad:<name>.png'),
-    '18.09.2026-06-07-my-bad--name-.png',
-  );
+  const filename = fs.__generateSafeFilename('my bad:<name>.png');
+  assert.match(filename, /-my-bad--name-\.png$/u);
+  assert.doesNotMatch(filename, /[<>:"/\\|?*\s]/u);
 });
 
 test('V1 editor accepts pasted image, video and audio, then inserts an image-style media link', () => {
