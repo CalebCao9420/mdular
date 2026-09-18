@@ -359,8 +359,7 @@ fn preserve_metadata(source: &File, destination: &File) -> io::Result<()> {
                 })
                 .collect();
         }
-        Err(io::Error::new(
-            io::ErrorKind::Other,
+        Err(io::Error::other(
             "extended attribute list changed repeatedly",
         ))
     }
@@ -389,10 +388,7 @@ fn preserve_metadata(source: &File, destination: &File) -> io::Result<()> {
             value.truncate(written as usize);
             return Ok(value);
         }
-        Err(io::Error::new(
-            io::ErrorKind::Other,
-            "extended attribute changed repeatedly",
-        ))
+        Err(io::Error::other("extended attribute changed repeatedly"))
     }
 
     let source_metadata = source.metadata()?;
