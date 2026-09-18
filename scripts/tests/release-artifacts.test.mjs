@@ -6,6 +6,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -219,6 +220,21 @@ test('candidate and signing gates reject forbidden output or missing secrets', (
     validateSigningEnvironment({ TAURI_SIGNING_PRIVATE_KEY: 'private-key-reference' }),
     true,
   );
+});
+
+test('candidate permits only the standard local AppDir icon link', {
+  skip: 'win32' === process.platform,
+}, () => {
+  const root = fixtureRoot('candidate-appdir-link');
+  const appDir = join(root, 'bundle', 'mdular.AppDir');
+  mkdirSync(appDir, { recursive: true });
+  writeFileSync(join(appDir, 'mdular.png'), 'icon', 'utf8');
+  symlinkSync('mdular.png', join(appDir, '.DirIcon'));
+
+  assert.equal(assertCandidateOutput(root), true);
+
+  symlinkSync('mdular.png', join(appDir, 'unexpected-link'));
+  assert.throws(() => assertCandidateOutput(root), /unexpected symbolic link/u);
 });
 
 test('repository release config pins one updater version and a narrow response capability', () => {

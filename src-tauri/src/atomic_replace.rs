@@ -486,12 +486,32 @@ fn replace_file(
         ) -> i32;
     }
 
-    fn wide_null(path: &Path) -> Vec<u16> {
-        path.as_os_str().encode_wide().chain(Some(0)).collect()
+    fn wide_null(path: &Path) -> io::Result<Vec<u16>> {
+        let parent = path.parent().ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "replacement path has no parent",
+            )
+        })?;
+        let file_name = path.file_name().ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "replacement path has no file name",
+            )
+        })?;
+        // canonicalize() returns Windows extended-length syntax. Canonicalizing the existing
+        // parent instead of the target also supports the first commit, where the target does not
+        // exist yet, and keeps MoveFileExW/ReplaceFileW out of the legacy MAX_PATH limit.
+        let extended_path = parent.canonicalize()?.join(file_name);
+        Ok(extended_path
+            .as_os_str()
+            .encode_wide()
+            .chain(Some(0))
+            .collect())
     }
 
-    let target = wide_null(target);
-    let temporary = wide_null(temporary_path);
+    let target = wide_null(target)?;
+    let temporary = wide_null(temporary_path)?;
     // SAFETY: both UTF-16 path buffers are NUL-terminated and live through the system call; the
     // optional backup/exclusion/reserved pointers are intentionally null.
     let result = unsafe {
@@ -646,6 +666,31 @@ mod tests {
                 0o600
             );
         }
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn windows_private_atomic_write_supports_extended_length_paths() {
+        use std::os::windows::ffi::OsStrExt;
+
+        let fixture = Fixture::new("windows-long-path");
+        let mut directory = fixture.root.clone();
+        while directory.as_os_str().encode_wide().count() < 280 {
+            directory = directory.join("long-segment");
+        }
+        fs::create_dir_all(&directory).unwrap();
+        let target = directory.join("recovery.json");
+
+        prepare_private(&target, b"first\n")
+            .unwrap()
+            .commit()
+            .unwrap();
+        prepare_private(&target, b"second\n")
+            .unwrap()
+            .commit()
+            .unwrap();
+
+        assert_eq!(fs::read(&target).unwrap(), b"second\n");
     }
 
     #[test]

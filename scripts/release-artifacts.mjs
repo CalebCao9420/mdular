@@ -3,8 +3,10 @@
 import { createHash } from 'node:crypto';
 import {
   copyFileSync,
+  lstatSync,
   mkdirSync,
   readFileSync,
+  readlinkSync,
   readdirSync,
   statSync,
   writeFileSync,
@@ -77,6 +79,37 @@ function collectRegularFiles(root) {
     )) {
       const path = join(directory, entry.name);
       if (entry.isSymbolicLink()) { fail(`Release input contains a symbolic link: ${entry.name}`); }
+      if (entry.isDirectory()) {
+        visit(path);
+      } else if (entry.isFile()) {
+        files.push(path);
+      }
+    }
+  }
+  visit(root);
+  return files;
+}
+
+function collectCandidateFiles(root) {
+  const files = [];
+  function visit(directory) {
+    for (const entry of readdirSync(directory, { withFileTypes: true }).sort((left, right) =>
+      left.name.localeCompare(right.name)
+    )) {
+      const path = join(directory, entry.name);
+      if (entry.isSymbolicLink()) {
+        const target = readlinkSync(path);
+        const isAppDirIcon =
+          '.DirIcon' === entry.name &&
+          basename(directory).endsWith('.AppDir') &&
+          target === basename(target) &&
+          '.' !== target &&
+          '..' !== target;
+        if (!isAppDirIcon || !lstatSync(join(directory, target)).isFile()) {
+          fail(`Candidate output contains an unexpected symbolic link: ${entry.name}`);
+        }
+        continue;
+      }
       if (entry.isDirectory()) {
         visit(path);
       } else if (entry.isFile()) {
@@ -408,7 +441,7 @@ export function validateSigningEnvironment(environment = process.env) {
 }
 
 export function assertCandidateOutput(searchRoot) {
-  const forbidden = collectRegularFiles(resolve(searchRoot)).filter((path) =>
+  const forbidden = collectCandidateFiles(resolve(searchRoot)).filter((path) =>
     path.endsWith('.sig') ||
     path.endsWith('.app.tar.gz') ||
     'latest.json' === basename(path)
