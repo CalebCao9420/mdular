@@ -3,10 +3,8 @@
 import { createHash } from 'node:crypto';
 import {
   copyFileSync,
-  lstatSync,
   mkdirSync,
   readFileSync,
-  readlinkSync,
   readdirSync,
   statSync,
   writeFileSync,
@@ -98,20 +96,13 @@ function collectCandidateFiles(root) {
     )) {
       const path = join(directory, entry.name);
       if (entry.isSymbolicLink()) {
-        const target = readlinkSync(path);
-        const isAppDirIcon =
-          '.DirIcon' === entry.name &&
-          basename(directory).endsWith('.AppDir') &&
-          target === basename(target) &&
-          '.' !== target &&
-          '..' !== target;
-        if (!isAppDirIcon || !lstatSync(join(directory, target)).isFile()) {
-          fail(`Candidate output contains an unexpected symbolic link: ${entry.name}`);
-        }
-        continue;
+        fail(`Candidate output contains an unexpected symbolic link: ${entry.name}`);
       }
       if (entry.isDirectory()) {
-        visit(path);
+        // AppDir is an AppImage staging directory whose standard layout contains
+        // internal icon, desktop-entry and library symlinks. The uploaded candidate
+        // is the sibling .AppImage, so updater sidecars are checked outside AppDir.
+        if (!entry.name.endsWith('.AppDir')) { visit(path); }
       } else if (entry.isFile()) {
         files.push(path);
       }

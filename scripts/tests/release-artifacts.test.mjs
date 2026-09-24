@@ -222,24 +222,32 @@ test('candidate and signing gates reject forbidden output or missing secrets', (
   );
 });
 
-test('candidate permits only the standard local AppDir icon link', {
+test('candidate skips AppDir staging links but rejects links in candidate output', {
   skip: 'win32' === process.platform,
 }, () => {
   const root = fixtureRoot('candidate-appdir-link');
   const appDir = join(root, 'bundle', 'mdular.AppDir');
-  mkdirSync(appDir, { recursive: true });
-  writeFileSync(join(appDir, 'mdular.png'), 'icon', 'utf8');
+  const iconDirectory = join(appDir, 'usr', 'share', 'icons', 'hicolor', '128x128', 'apps');
+  const desktopDirectory = join(appDir, 'usr', 'share', 'applications');
+  mkdirSync(iconDirectory, { recursive: true });
+  mkdirSync(desktopDirectory, { recursive: true });
+  writeFileSync(join(iconDirectory, 'mdular.png'), 'icon', 'utf8');
+  writeFileSync(join(desktopDirectory, 'mdular.desktop'), '[Desktop Entry]\n', 'utf8');
+  symlinkSync(
+    'usr/share/icons/hicolor/128x128/apps/mdular.png',
+    join(appDir, 'mdular.png'),
+  );
   symlinkSync('mdular.png', join(appDir, '.DirIcon'));
+  symlinkSync(
+    'usr/share/applications/mdular.desktop',
+    join(appDir, 'mdular.desktop'),
+  );
+  symlinkSync('mdular.png', join(appDir, 'internal-staging-link'));
 
   assert.equal(assertCandidateOutput(root), true);
 
-  rmSync(join(appDir, '.DirIcon'));
-  symlinkSync(join(appDir, 'mdular.png'), join(appDir, '.DirIcon'));
-  assert.throws(() => assertCandidateOutput(root), /unexpected symbolic link/u);
-
-  rmSync(join(appDir, '.DirIcon'));
-  symlinkSync('mdular.png', join(appDir, '.DirIcon'));
-  symlinkSync('mdular.png', join(appDir, 'unexpected-link'));
+  writeFileSync(join(root, 'candidate-target'), 'candidate', 'utf8');
+  symlinkSync('candidate-target', join(root, 'unexpected-link'));
   assert.throws(() => assertCandidateOutput(root), /unexpected symbolic link/u);
 });
 
