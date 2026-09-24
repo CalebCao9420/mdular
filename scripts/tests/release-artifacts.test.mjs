@@ -233,6 +233,12 @@ test('candidate permits only the standard local AppDir icon link', {
 
   assert.equal(assertCandidateOutput(root), true);
 
+  rmSync(join(appDir, '.DirIcon'));
+  symlinkSync(join(appDir, 'mdular.png'), join(appDir, '.DirIcon'));
+  assert.throws(() => assertCandidateOutput(root), /unexpected symbolic link/u);
+
+  rmSync(join(appDir, '.DirIcon'));
+  symlinkSync('mdular.png', join(appDir, '.DirIcon'));
   symlinkSync('mdular.png', join(appDir, 'unexpected-link'));
   assert.throws(() => assertCandidateOutput(root), /unexpected symbolic link/u);
 });
